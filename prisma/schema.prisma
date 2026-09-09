@@ -1,0 +1,287 @@
+// Prisma schema — Phase 0/1 (tenancy, auth) + Phase 2 (menu management).
+// Ordering, billing, and growth models are added in their respective
+// build phases per PROMPT.md §11. Every tenant-owned model below carries
+// tenantId + timestamps + soft delete, per PROMPT.md §3 and §4.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Platform & identity
+// ---------------------------------------------------------------------------
+
+enum GlobalRole {
+  SUPERADMIN
+  USER
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  hashedPassword String?
+  name          String?
+  avatarUrl     String?
+  globalRole    GlobalRole   @default(USER)
+  memberships   Membership[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  @@map("users")
+}
+
+enum MembershipRole {
+  OWNER
+  MANAGER
+  WAITER
+  KITCHEN
+  ACCOUNTANT
+}
+
+model Tenant {
+  id                 String       @id @default(cuid())
+  slug               String       @unique
+  name               String
+  plan               String       @default("FREE")
+  subscriptionStatus String       @default("TRIALING")
+  stripeCustomerId   String?      @unique
+  stripeSubscriptionId String?    @unique
+  connectAccountId   String?      @unique
+  defaultLocale      String       @default("en")
+  currency           String       @default("USD")
+  featureFlags       Json         @default("{}")
+  memberships        Membership[]
+  domains            Domain[]
+  locations          Location[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  deletedAt          DateTime?
+
+  @@map("tenants")
+}
+
+model Membership {
+  id         String         @id @default(cuid())
+  tenantId   String
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       MembershipRole
+  locationId String? // null = access to all locations under the tenant
+  staffPin   StaffPin?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  deletedAt  DateTime?
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@map("memberships")
+}
+
+model StaffPin {
+  id           String     @id @default(cuid())
+  membershipId String     @unique
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  hashedPin    String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("staff_pins")
+}
+
+enum DomainStatus {
+  PENDING
+  VERIFYING
+  ACTIVE
+  FAILED
+}
+
+model Domain {
+  id         String       @id @default(cuid())
+  tenantId   String
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  hostname   String       @unique
+  status     DomainStatus @default(PENDING)
+  verificationToken String @default(cuid())
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@map("domains")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  actorUserId String?
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, entityType, entityId])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Storefront content (skeleton — extended in Phase 2)
+// ---------------------------------------------------------------------------
+
+model Location {
+  id        String    @id @default(cuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  address   String?
+  timezone  String    @default("UTC")
+  phone     String?
+  currency  String    @default("USD")
+  menus     Menu[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId])
+  @@map("locations")
+}
+
+// ---------------------------------------------------------------------------
+// Menu management (Phase 2)
+// ---------------------------------------------------------------------------
+
+model Menu {
+  id         String     @id @default(cuid())
+  tenantId   String
+  locationId String
+  location   Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  name       String
+  // Optional availability window, e.g. Breakfast 07:00-11:00. Both null
+  // means "always available". Stored as "HH:mm" 24h strings — timezone
+  // comes from the owning Location.
+  availableFrom String?
+  availableTo   String?
+  isActive   Boolean    @default(true)
+  sortOrder  Int        @default(0)
+  categories Category[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  deletedAt  DateTime?
+
+  @@index([tenantId])
+  @@index([locationId])
+  @@map("menus")
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  tenantId    String
+  menuId      String
+  menu        Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  imageUrl    String?
+  sortOrder   Int        @default(0)
+  items       MenuItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+
+  @@index([tenantId])
+  @@index([menuId])
+  @@map("categories")
+}
+
+model MenuItem {
+  id             String          @id @default(cuid())
+  tenantId       String
+  categoryId     String
+  category       Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  // Money stored as an integer in the currency's minor unit (cents),
+  // per PROMPT.md §4's money rule — never a float.
+  basePriceCents Int
+  images         String[]        @default([])
+  allergens      String[]        @default([])
+  dietaryTags    String[]        @default([])
+  calories       Int?
+  prepTimeMinutes Int?
+  spiceLevel     Int?            @default(0)
+  isAvailable    Boolean         @default(true)
+  // null = untracked/unlimited stock; a number is decremented as orders
+  // come in once ordering (Phase 3+) is wired up.
+  stockCount     Int?
+  sortOrder      Int             @default(0)
+  modifierGroups ModifierGroup[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+
+  @@index([tenantId])
+  @@index([categoryId])
+  @@map("menu_items")
+}
+
+model ModifierGroup {
+  id          String     @id @default(cuid())
+  tenantId    String
+  menuItemId  String
+  menuItem    MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name        String
+  // e.g. "Choose size" -> required, single-select (min=1, max=1).
+  // "Add toppings" -> optional, multi-select (min=0, max=4).
+  minSelect   Int        @default(0)
+  maxSelect   Int        @default(1)
+  sortOrder   Int        @default(0)
+  modifiers   Modifier[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([tenantId])
+  @@index([menuItemId])
+  @@map("modifier_groups")
+}
+
+model Modifier {
+  id              String        @id @default(cuid())
+  tenantId        String
+  modifierGroupId String
+  modifierGroup   ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+  name            String
+  priceDeltaCents Int           @default(0)
+  isAvailable     Boolean       @default(true)
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([tenantId])
+  @@index([modifierGroupId])
+  @@map("modifiers")
+}
+
+model Translation {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  entityType         String
+  entityId           String
+  field              String
+  locale             String
+  value              String
+  isMachineTranslated Boolean @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([tenantId, entityType, entityId, field, locale])
+  @@index([tenantId, entityType, entityId])
+  @@map("translations")
+}

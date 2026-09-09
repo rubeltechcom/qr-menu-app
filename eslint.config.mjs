@@ -13,6 +13,28 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // Enforce the tenancy isolation boundary from PROMPT.md §3.1: feature
+    // code must never import the raw Prisma client directly. All tenant
+    // data access goes through the tenant-scoped repository layer in
+    // src/server/db (see forTenant()).
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/server/db/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@prisma/client",
+              message:
+                "Do not import @prisma/client directly. Use the tenant-scoped client from '@/server/db' (forTenant) so row-level isolation is always enforced.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

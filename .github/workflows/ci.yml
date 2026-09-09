@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: qrmenu
+          POSTGRES_PASSWORD: qrmenu_dev_password
+          POSTGRES_DB: qrmenu_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U qrmenu"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      APP_URL: http://localhost:3000
+      APP_DOMAIN: localhost
+      DATABASE_URL: postgresql://qrmenu:qrmenu_dev_password@localhost:5432/qrmenu_test
+      REDIS_URL: redis://localhost:6379
+      AUTH_SECRET: ci-only-secret-not-used-in-any-real-environment-00000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Prisma generate
+        run: npm run db:generate
+
+      - name: Prisma migrate deploy
+        run: npm run db:deploy
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Build
+        run: npm run build
+
+      # Unit/integration tests and the tenant-isolation suite are added
+      # in Phase 1 alongside the test runner (Vitest) — this job is
+      # already wired to run them via `npm test` once that lands.
