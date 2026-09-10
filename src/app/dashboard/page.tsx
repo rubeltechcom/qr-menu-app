@@ -1,18 +1,13 @@
 import { requireAuth } from "@/lib/require-auth";
-import { rawPrisma } from "@/server/db/client";
+import { listMembershipsForUser } from "@/modules/tenants/membership.repository";
 import { signOut } from "@/lib/auth";
 
 export default async function DashboardPage() {
   const session = await requireAuth();
 
-  // A user's memberships tell us which tenant(s) they belong to. This
-  // is a global (non-tenant-scoped) lookup by design — see the note on
-  // "users" in the row_level_security migration — narrowed to the
-  // current user's own id only.
-  const memberships = await rawPrisma.membership.findMany({
-    where: { userId: session.user.id },
-    include: { tenant: { select: { id: true, slug: true, name: true, plan: true } } },
-  });
+  // Which tenant(s) this person belongs to — a global lookup by design,
+  // narrowed to their own id. See membership.repository.ts.
+  const memberships = await listMembershipsForUser(session.user.id);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">

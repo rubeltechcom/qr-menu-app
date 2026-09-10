@@ -1,6 +1,7 @@
 import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
-import * as locationService from "@/modules/locations/location.service";
-import * as menuService from "@/modules/menu/menu.service";
+import type { TenantPrismaClient } from "@/server/db/tenant-client";
+import * as locationRepo from "@/modules/locations/location.repository";
+import * as menuRepo from "@/modules/menu/menu.repository";
 import {
   createLocationAction,
   createMenuAction,
@@ -15,9 +16,9 @@ export default async function MenuBuilderPage({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  await requireDashboardTenant(tenantSlug);
+  const { db } = await requireDashboardTenant(tenantSlug);
 
-  const locations = await locationService.listMyLocations();
+  const locations = await locationRepo.listLocations(db);
 
   if (locations.length === 0) {
     return (
@@ -55,7 +56,7 @@ export default async function MenuBuilderPage({
   }
 
   const location = locations[0]!;
-  const menus = await menuService.listMenus(location.id);
+  const menus = await menuRepo.listMenusForLocation(db, location.id);
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
@@ -85,14 +86,22 @@ export default async function MenuBuilderPage({
       )}
 
       {menus.map((menu) => (
-        <MenuSection key={menu.id} tenantSlug={tenantSlug} menuId={menu.id} />
+        <MenuSection key={menu.id} tenantSlug={tenantSlug} menuId={menu.id} db={db} />
       ))}
     </div>
   );
 }
 
-async function MenuSection({ tenantSlug, menuId }: { tenantSlug: string; menuId: string }) {
-  const menu = await menuService.getMenu(menuId);
+async function MenuSection({
+  tenantSlug,
+  menuId,
+  db,
+}: {
+  tenantSlug: string;
+  menuId: string;
+  db: TenantPrismaClient;
+}) {
+  const menu = await menuRepo.getMenuWithContent(db, menuId);
   if (!menu) return null;
 
   return (

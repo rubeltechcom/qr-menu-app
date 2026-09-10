@@ -19,6 +19,23 @@ export interface TenantContext {
 
 const storage = new AsyncLocalStorage<TenantContext>();
 
+/**
+ * IMPORTANT — keep `fn` synchronous.
+ *
+ * AsyncLocalStorage propagates through awaits inside `fn`, but NOT across
+ * React's render boundary: a Server Component that returns JSX from an
+ * async callback here will find the store empty by the time the JSX is
+ * rendered, and requireTenantContext() throws — or worse, a helper that
+ * tolerates a missing context silently queries unscoped.
+ *
+ * So the established pattern is: enter the context, take what you need out
+ * of it, and do the awaiting outside:
+ *
+ *   const { db } = runWithTenant(id, slug, () => requireTenantContext());
+ *   const rows = await repo.list(db);
+ *
+ * See src/lib/require-tenant.ts and src/app/t/[publicCode]/page.tsx.
+ */
 export function runWithTenant<T>(
   tenantId: string,
   tenantSlug: string,

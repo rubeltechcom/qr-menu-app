@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { requireAuth } from "@/lib/require-auth";
 import { rawPrisma } from "@/server/db/client";
-import { runWithTenant } from "@/server/tenant-context";
+import { runWithTenant, requireTenantContext } from "@/server/tenant-context";
 
 /**
  * Use at the top of any authenticated dashboard page that operates on a
@@ -34,9 +34,19 @@ export async function requireDashboardTenant(tenantSlug: string) {
     redirect("/staff");
   }
 
-  return runWithTenant(membership.tenant.id, membership.tenant.slug, () => ({
+  // The AsyncLocalStorage store does not survive React's render boundary
+  // (see the note on runWithTenant), so a page that awaits after this
+  // returns would find requireTenantContext() empty. Handing back the
+  // scoped `db` alongside the context means callers can pass it to a
+  // repository directly and never depend on the store still being there.
+  const { db } = runWithTenant(membership.tenant.id, membership.tenant.slug, () =>
+    requireTenantContext(),
+  );
+
+  return {
     session,
     membership,
     tenant: membership.tenant,
-  }));
+    db,
+  };
 }

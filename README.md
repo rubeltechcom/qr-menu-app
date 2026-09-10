@@ -31,7 +31,13 @@ npm run db:migrate
 npm run dev
 ```
 
-Open http://localhost:3000.
+```bash
+# 6. Optional: load a demo restaurant to click around
+npm run db:seed:demo
+```
+
+Open http://localhost:3000. The demo seed prints its login
+(`demo@qrmenu.test` / `demo1234`) and a scannable table URL.
 
 ## Scripts
 
@@ -45,6 +51,7 @@ Open http://localhost:3000.
 | `npm run db:migrate` | Create/apply a dev migration |
 | `npm run db:deploy` | Apply migrations (CI/production) |
 | `npm run db:studio` | Prisma Studio GUI |
+| `npm run db:seed:demo` | Load demo restaurant, menu and tables (idempotent) |
 
 ## Project structure
 
@@ -72,10 +79,17 @@ Tenant isolation is enforced at three independent layers — see PROMPT.md
    enforced by an ESLint rule). All data access goes through
    `forTenant(tenantId)` in `src/server/db/tenant-client.ts`, which
    auto-injects a tenant filter into every query.
-3. **Request** — `src/middleware.ts` resolves the tenant hostname before
-   any handler runs; `src/server/tenant-context.ts` makes that tenant
-   available via `requireTenantContext()`, which throws rather than
-   silently returning an unscoped client.
+3. **Request** — `src/proxy.ts` (Next.js 16's name for what used to be
+   `middleware.ts`) resolves the tenant hostname before any handler runs;
+   `src/server/tenant-context.ts` makes that tenant available via
+   `requireTenantContext()`, which throws rather than silently returning
+   an unscoped client.
+
+   Note that `AsyncLocalStorage` does not survive React's render
+   boundary, so a Server Component must take the scoped `db` out of the
+   context and pass it to repositories explicitly — see the comment on
+   `runWithTenant()`. `requireDashboardTenant()` returns `db` for exactly
+   this reason.
 
 A cross-tenant-read test suite (added alongside the Phase 1 schema) must
 pass in CI before any tenant-scoped feature ships.

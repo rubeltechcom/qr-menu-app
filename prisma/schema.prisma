@@ -147,6 +147,8 @@ model Location {
   phone     String?
   currency  String    @default("USD")
   menus     Menu[]
+  zones     Zone[]
+  tables    Table[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -284,4 +286,56 @@ model Translation {
   @@unique([tenantId, entityType, entityId, field, locale])
   @@index([tenantId, entityType, entityId])
   @@map("translations")
+}
+
+// ---------------------------------------------------------------------------
+// Storefront — zones, tables and QR codes (Phase 3)
+// ---------------------------------------------------------------------------
+
+model Zone {
+  id         String    @id @default(cuid())
+  tenantId   String
+  locationId String
+  location   Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  name       String
+  sortOrder  Int       @default(0)
+  tables     Table[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@index([tenantId])
+  @@index([locationId])
+  @@map("zones")
+}
+
+model Table {
+  id         String   @id @default(cuid())
+  tenantId   String
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  zoneId     String?
+  zone       Zone?    @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+
+  // Human-facing label the staff use ("12", "Patio 3"). Unique per
+  // location so two tables cannot both be called "12".
+  label String
+
+  // The code that appears in the QR URL (/t/<publicCode>). Short enough
+  // to fit a small printed code, random enough that a diner cannot guess
+  // a neighbouring table and order to it. Globally unique because the
+  // storefront resolves a table from this code ALONE — there is no tenant
+  // in the URL to scope the lookup by.
+  publicCode String @unique
+
+  seats     Int?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([locationId, label])
+  @@index([tenantId])
+  @@index([locationId])
+  @@map("tables")
 }

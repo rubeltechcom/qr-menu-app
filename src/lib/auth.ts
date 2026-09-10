@@ -18,6 +18,21 @@ import { env } from "@/lib/env";
  * sessions").
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Auth.js refuses to serve any endpoint on a host it does not trust, to
+  // stop a spoofed Host header pointing a callback somewhere else. In dev
+  // it trusts localhost implicitly, so a missing setting only shows up in
+  // production — as a blanket 500 on every /api/auth/* route reading
+  // "There was a problem with the server configuration".
+  //
+  // trustHost tells Auth.js to accept the host forwarded by the reverse
+  // proxy the app runs behind (Vercel, or a container behind nginx), which
+  // is required for it to work there at all.
+  //
+  // The safety condition that comes with it: the proxy must set
+  // X-Forwarded-Host itself and not pass a client-supplied one through.
+  // Vercel and a correctly configured nginx both do. If this ever runs
+  // somewhere that doesn't, pin the host there instead of relaxing it here.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
