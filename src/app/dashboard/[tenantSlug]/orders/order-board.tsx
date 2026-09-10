@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { SerializedOrder } from "@/modules/orders/order.service";
-import { useOrderSound } from "./use-order-sound";
-import { useOrderStream } from "./use-order-stream";
+import { useOrderSound } from "@/lib/use-order-sound";
+import { useLiveOrders } from "@/lib/use-live-orders";
 import {
   acceptOrderAction,
   completeOrderAction,
@@ -51,9 +51,9 @@ export function OrderBoard({
     [play],
   );
 
-  const { orders, connection, patchOrder } = useOrderStream({
-    tenantSlug,
-    locationId,
+  const { orders, connection, patchOrder } = useLiveOrders({
+    streamUrl: `/api/realtime/orders?tenant=${encodeURIComponent(tenantSlug)}&locationId=${encodeURIComponent(locationId)}`,
+    resyncUrl: `/api/admin/orders?tenant=${encodeURIComponent(tenantSlug)}&locationId=${encodeURIComponent(locationId)}`,
     initialOrders,
     onNewOrder: notify,
   });

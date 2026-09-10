@@ -26,6 +26,10 @@ const eslintConfig = defineConfig([
     // forTenant() inconvenient.
     ignores: [
       "src/server/db/**",
+      // Tests set up and tear down fixtures across tenants, and the
+      // isolation suite exists specifically to prove that the raw client
+      // is still blocked by RLS — it has to be able to reach for it.
+      "src/**/__tests__/**",
       // Resolves which tenant a request belongs to, from the hostname.
       "src/modules/tenants/tenant-resolver.ts",
       // Creates the tenant row itself — there is no tenant to scope to yet.

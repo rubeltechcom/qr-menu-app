@@ -20,6 +20,8 @@ import { hash } from "@node-rs/argon2";
 const EMAIL = "demo@qrmenu.test";
 const PASSWORD = "demo1234";
 const SLUG = "demo-diner";
+const STAFF_EMAIL = "kitchen@qrmenu.test";
+const STAFF_PIN = "1234";
 const FIXED_TABLE_CODE = "DEMO2345";
 
 const prisma = new PrismaClient();
@@ -80,6 +82,10 @@ async function removeExistingDemo() {
   for (const tenantId of tenantIds) {
     await scoped(tenantId, async (tx) => {
       // Children first — RLS is FORCE-enabled, so these run scoped too.
+      await tx.orderEvent.deleteMany({});
+      await tx.orderItem.deleteMany({});
+      await tx.order.deleteMany({});
+      await tx.orderCounter.deleteMany({});
       await tx.table.deleteMany({});
       await tx.zone.deleteMany({});
       await tx.modifier.deleteMany({});
@@ -88,12 +94,17 @@ async function removeExistingDemo() {
       await tx.category.deleteMany({});
       await tx.menu.deleteMany({});
       await tx.location.deleteMany({});
+      // staffPin has a required membership, so it goes first.
+      await tx.staffPin.deleteMany({});
       await tx.membership.deleteMany({});
       await tx.tenant.delete({ where: { id: tenantId } });
     });
   }
 
   if (prior) await prisma.user.delete({ where: { id: prior.id } });
+
+  const priorStaff = await prisma.user.findUnique({ where: { email: STAFF_EMAIL } });
+  if (priorStaff) await prisma.user.delete({ where: { id: priorStaff.id } });
 }
 
 // Same alphabet as src/modules/tables/public-code.ts.
@@ -181,6 +192,21 @@ async function main() {
     ),
   );
 
+  // A kitchen tablet logs in with a PIN, not an email — so the demo
+  // needs a staff member to exercise /staff/kitchen and /staff/floor.
+  const staffUser = await prisma.user.create({
+    data: { email: STAFF_EMAIL, name: "Demo Kitchen" },
+  });
+  const staffMembership = await scoped(tenantId, (tx) =>
+    tx.membership.create({ data: { tenantId, userId: staffUser.id, role: "KITCHEN" } }),
+  );
+  const hashedPin = await hash(STAFF_PIN);
+  await scoped(tenantId, (tx) =>
+    tx.staffPin.create({
+      data: { membershipId: staffMembership.id, hashedPin },
+    }),
+  );
+
   console.log("\n=== Demo data ready ===");
   console.log(`  email     ${EMAIL}`);
   console.log(`  password  ${PASSWORD}`);
@@ -189,6 +215,9 @@ async function main() {
   console.log(`  Tables     http://localhost:3000/dashboard/${SLUG}/tables`);
   console.log(`  Menu       http://localhost:3000/dashboard/${SLUG}/menu`);
   console.log(`  Scan       http://localhost:3000/t/${FIXED_TABLE_CODE}   (table 14)`);
+  console.log("");
+  console.log(`  Staff PIN  http://localhost:3000/staff/login`);
+  console.log(`             restaurant "${SLUG}", PIN ${STAFF_PIN}`);
   console.log("");
   console.log(`  ${tables.map((t) => `${t.label}=${t.publicCode}`).join("  ")}`);
   console.log("");

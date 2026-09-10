@@ -118,6 +118,23 @@ sound"): browsers block `audio.play()` until a user gesture, so the
 click plays a muted clip and rewinds it. The choice is remembered per
 browser.
 
+## Staff console
+
+Waiters and kitchen staff sign in with a PIN rather than an email
+(`/staff/login`), and get two tablet-first screens:
+
+- **`/staff/kitchen`** — tickets oldest-first, colour-coded by how long
+  they have been waiting (amber at 8 minutes, red at 15), one tap to
+  start or mark ready.
+- **`/staff/floor`** — every table on the floor with what it is waiting
+  on; green means there is food to carry out.
+
+Both use the same `useLiveOrders` hook as the owner's board, so the
+delivery guarantees cannot drift apart between the two surfaces. They
+authenticate differently, though, so they have their own endpoints
+(`/api/staff/realtime`, `/api/staff/orders`) that check the PIN session
+and take the tenant from it rather than from the query string.
+
 ## Build phases
 
 This project is built in the phases described in PROMPT.md §11
