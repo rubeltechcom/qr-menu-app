@@ -20,7 +20,7 @@ import type { StorageKey } from "@/modules/storage/provider";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET(_request: NextRequest, context: RouteContext<"/api/uploads/[...key]">) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ key: string[] }> }) {
   const { key: segments } = await context.params;
   const key = segments.join("/");
 
