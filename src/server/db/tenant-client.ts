@@ -34,6 +34,10 @@ const TENANT_SCOPED_MODELS = [
   "Translation",
   "Zone",
   "Table",
+  "Order",
+  "OrderItem",
+  "OrderEvent",
+  "OrderCounter",
 ] as const;
 
 export function forTenant(tenantId: string) {

@@ -45,14 +45,26 @@ const eslintConfig = defineConfig([
       // resolveTableByPublicCode(); the `public_code_lookup` RLS policy
       // is what keeps that read narrow.
       "src/modules/tables/table.repository.ts",
+      // Same shape for a diner's order-tracking token — see
+      // resolveTenantByTrackToken() and the track_token_lookup policy.
+      "src/modules/orders/order.repository.ts",
     ],
     rules: {
-      "no-restricted-imports": [
+      // The @typescript-eslint variant, not the base rule — only it
+      // understands allowTypeImports, which is what lets generated
+      // Prisma *types* through while still blocking the runtime client.
+      "no-restricted-imports": "off",
+      "@typescript-eslint/no-restricted-imports": [
         "error",
         {
           paths: [
             {
               name: "@prisma/client",
+              // Types are exempt: `import type { OrderStatus }` pulls in
+              // no runtime client and cannot bypass scoping, while
+              // hand-copying generated enums would drift from the schema.
+              // The runtime client is what this rule is guarding.
+              allowTypeImports: true,
               message:
                 "Do not import @prisma/client directly. Use the tenant-scoped client from '@/server/db' (forTenant) so row-level isolation is always enforced.",
             },

@@ -94,6 +94,30 @@ Tenant isolation is enforced at three independent layers — see PROMPT.md
 A cross-tenant-read test suite (added alongside the Phase 1 schema) must
 pass in CI before any tenant-scoped feature ships.
 
+## Realtime ordering
+
+Orders reach the kitchen over Server-Sent Events (`/api/realtime/orders`),
+published through Redis pub/sub so every app instance delivers.
+
+**Redis is treated as an optimisation, not a dependency.** If it is
+unreachable the bus falls back to in-process delivery — correct on a
+single instance, with a warning logged — because a kitchen that stops
+hearing orders is the one failure this product cannot absorb.
+
+The board defends the same failure three more ways:
+
+1. `EventSource` reconnects on its own.
+2. Every reconnect triggers a full re-sync against
+   `/api/admin/orders` — the stream resumes silently and never says what
+   it missed, so this is the layer that actually prevents a lost order.
+3. A 30-second poll runs underneath, in case the stream is open but
+   wedged.
+
+The audible alert needs one click to arm it ("Click here to enable
+sound"): browsers block `audio.play()` until a user gesture, so the
+click plays a muted clip and rewinds it. The choice is remembered per
+browser.
+
 ## Build phases
 
 This project is built in the phases described in PROMPT.md §11
