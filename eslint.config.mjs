@@ -63,6 +63,12 @@ const eslintConfig = defineConfig([
       // arrive with no tenant — the payment id or track token IS what
       // establishes it. See the bootstrap_payment_lookup policy.
       "src/modules/payments/payment.repository.ts",
+      // The one surface that legitimately looks ACROSS tenants: the
+      // platform operator's admin area. It reads under a dedicated
+      // SELECT-only policy gated on a transaction-local GUC, never by
+      // disabling RLS — see the platform_admin_read migration — and is
+      // reachable only behind requireSuperadmin().
+      "src/modules/platform/platform.repository.ts",
     ],
     rules: {
       // The @typescript-eslint variant, not the base rule — only it

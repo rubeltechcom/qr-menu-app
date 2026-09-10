@@ -38,35 +38,35 @@ export default async function BillingPage({
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
         Plan &amp; billing
       </h1>
 
       {checkout === "done" && (
-        <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-200">
+        <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">
           Payment received. Your plan updates as soon as Stripe confirms it —
           usually within a few seconds.
         </p>
       )}
       {checkout === "cancelled" && (
-        <p className="mt-4 rounded-lg bg-zinc-100 px-4 py-3 text-sm text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+        <p className="mt-4 rounded-lg bg-zinc-100 px-4 py-3 text-sm text-zinc-700">
           Checkout cancelled. Nothing has changed.
         </p>
       )}
 
-      <section className="mt-6 rounded-xl border border-zinc-200 p-5 dark:border-zinc-800">
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">Current plan</p>
-        <p className="mt-1 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+      <section className="mt-6 rounded-xl border border-zinc-200 p-5">
+        <p className="text-sm text-zinc-500">Current plan</p>
+        <p className="mt-1 text-xl font-semibold text-zinc-900">
           {current.name}
           {tenant.subscriptionStatus === "TRIALING" && tenant.trialEndsAt && (
-            <span className="ml-2 text-sm font-normal text-zinc-500 dark:text-zinc-400">
+            <span className="ml-2 text-sm font-normal text-zinc-500">
               trial ends {tenant.trialEndsAt.toLocaleDateString()}
             </span>
           )}
         </p>
 
         {tenant.subscriptionStatus === "PAST_DUE" && (
-          <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
             We could not take your last payment. Your plan keeps working for
             now — update your card to avoid losing paid features.
           </p>
@@ -75,8 +75,8 @@ export default async function BillingPage({
         <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {usage.map((row) => (
             <div key={row.label}>
-              <dt className="text-xs text-zinc-500 dark:text-zinc-400">{row.label}</dt>
-              <dd className="text-sm font-medium text-zinc-900 tabular-nums dark:text-zinc-50">
+              <dt className="text-xs text-zinc-500">{row.label}</dt>
+              <dd className="text-sm font-medium text-zinc-900 tabular-nums">
                 {row.used}
                 {row.max === null ? " / unlimited" : ` / ${row.max}`}
               </dd>
@@ -88,7 +88,7 @@ export default async function BillingPage({
           <form action={openBillingPortalAction.bind(null, tenantSlug)} className="mt-5">
             <button
               type="submit"
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700"
             >
               Manage billing, invoices and card
             </button>
@@ -97,13 +97,13 @@ export default async function BillingPage({
       </section>
 
       {!configured && (
-        <p className="mt-6 rounded-lg bg-zinc-100 px-4 py-3 text-sm text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+        <p className="mt-6 rounded-lg bg-zinc-100 px-4 py-3 text-sm text-zinc-700">
           Billing is not configured on this installation, so plans cannot be
           changed here yet.
         </p>
       )}
 
-      <h2 className="mt-10 text-lg font-medium text-zinc-900 dark:text-zinc-50">
+      <h2 className="mt-10 text-lg font-medium text-zinc-900">
         Plans
       </h2>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
@@ -119,7 +119,7 @@ export default async function BillingPage({
       </div>
 
       {!isOwner && (
-        <p className="mt-6 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-6 text-sm text-zinc-500">
           Only the account owner can change the plan.
         </p>
       )}
@@ -149,21 +149,21 @@ function PlanCard({
     <div
       className={`rounded-xl border p-5 ${
         isCurrent
-          ? "border-blue-500 bg-blue-50/40 dark:bg-blue-950/20"
-          : "border-zinc-200 dark:border-zinc-800"
+          ? "border-blue-500 bg-blue-50/40"
+          : "border-zinc-200"
       }`}
     >
-      <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{plan.name}</p>
-      <p className="mt-1 text-2xl font-bold text-zinc-900 tabular-nums dark:text-zinc-50">
+      <p className="text-lg font-semibold text-zinc-900">{plan.name}</p>
+      <p className="mt-1 text-2xl font-bold text-zinc-900 tabular-nums">
         {plan.monthlyPriceCents === null
           ? "Free"
           : `$${(plan.monthlyPriceCents / 100).toFixed(0)}`}
         {plan.monthlyPriceCents !== null && (
-          <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400">/mo</span>
+          <span className="text-sm font-normal text-zinc-500">/mo</span>
         )}
       </p>
 
-      <ul className="mt-4 flex flex-col gap-1 text-sm text-zinc-600 dark:text-zinc-400">
+      <ul className="mt-4 flex flex-col gap-1 text-sm text-zinc-600">
         <li>{plan.limits.locations ?? "Unlimited"} locations</li>
         <li>{plan.limits.menuItems ?? "Unlimited"} menu items</li>
         <li>{plan.limits.tables ?? "Unlimited"} tables</li>
@@ -178,15 +178,15 @@ function PlanCard({
 
       <div className="mt-5">
         {isCurrent ? (
-          <p className="text-sm font-medium text-blue-700 dark:text-blue-400">
+          <p className="text-sm font-medium text-blue-700">
             Current plan
           </p>
         ) : planId === "FREE" ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-zinc-500">
             Cancel from the billing portal to return to Free.
           </p>
         ) : !purchasable ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-zinc-500">
             Not available on this installation.
           </p>
         ) : canChange ? (
@@ -200,7 +200,7 @@ function PlanCard({
           >
             <button
               type="submit"
-              className="w-full rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white dark:bg-zinc-50 dark:text-zinc-900"
+              className="w-full rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white"
             >
               Choose {plan.name}
             </button>

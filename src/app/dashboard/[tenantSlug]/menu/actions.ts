@@ -13,36 +13,87 @@ import { assertCanCreate } from "@/modules/billing/entitlements";
  * other, and the slug in the URL is the only thing we trust to name
  * "which tenant", re-checked against the caller's own membership each
  * time (PROMPT.md §5.5: "Server-side authorization on every mutation").
+ *
+ * Service calls go inside `withTenant`. The service layer resolves its
+ * own scoped client from AsyncLocalStorage, and that store does not
+ * survive the await on requireDashboardTenant — calling a service
+ * outside the callback throws "No tenant context available".
  */
 
 export async function createLocationAction(tenantSlug: string, formData: FormData) {
-  const { db, tenant } = await requireDashboardTenant(tenantSlug);
+  const { db, tenant, withTenant } = await requireDashboardTenant(tenantSlug);
   await assertCanCreate(db, tenant, "locations");
-  await locationService.createMyLocation({
-    name: formData.get("name"),
-    address: formData.get("address") || undefined,
-    timezone: formData.get("timezone") || "UTC",
-    currency: formData.get("currency") || "USD",
-  });
+
+  await withTenant(() =>
+    locationService.createMyLocation({
+      name: formData.get("name"),
+      address: formData.get("address") || undefined,
+      timezone: formData.get("timezone") || "UTC",
+      currency: formData.get("currency") || "USD",
+    }),
+  );
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }
 
 export async function createMenuAction(tenantSlug: string, formData: FormData) {
-  await requireDashboardTenant(tenantSlug);
-  await menuService.createMenu({
-    locationId: formData.get("locationId"),
-    name: formData.get("name"),
-  });
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() =>
+    menuService.createMenu({
+      locationId: formData.get("locationId"),
+      name: formData.get("name"),
+    }),
+  );
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }
 
 export async function createCategoryAction(tenantSlug: string, menuId: string, formData: FormData) {
-  await requireDashboardTenant(tenantSlug);
-  await menuService.createCategory({
-    menuId,
-    name: formData.get("name"),
-  });
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() =>
+    menuService.createCategory({
+      menuId,
+      name: formData.get("name"),
+      icon: formData.get("icon") || undefined,
+    }),
+  );
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
+}
+
+export async function updateCategoryAction(
+  tenantSlug: string,
+  categoryId: string,
+  formData: FormData,
+) {
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() =>
+    menuService.updateCategory(categoryId, {
+      name: formData.get("name"),
+      icon: formData.get("icon") || undefined,
+    }),
+  );
+  revalidatePath(`/dashboard/${tenantSlug}/menu`);
+}
+
+export async function deleteCategoryAction(tenantSlug: string, categoryId: string) {
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+  // Soft delete: the category and its dishes stop appearing on the
+  // storefront, but past orders still resolve what was ordered.
+  await withTenant(() => menuService.deleteCategory(categoryId));
+  revalidatePath(`/dashboard/${tenantSlug}/menu`);
+}
+
+/**
+ * Price arrives from a number input as a major-unit string ("8.95").
+ * Rounded to the nearest minor unit here so the rest of the app only
+ * ever sees the integer cents that PROMPT.md §4 requires.
+ */
+function priceToCents(value: FormDataEntryValue | null): number {
+  return Math.round(Number(value ?? 0) * 100);
+}
+
+/** A comma-separated tag field, normalised and de-duplicated. */
+function tagList(value: FormDataEntryValue | null): string[] {
+  if (typeof value !== "string" || !value.trim()) return [];
+  return [...new Set(value.split(",").map((tag) => tag.trim()).filter(Boolean))];
 }
 
 export async function createMenuItemAction(
@@ -50,17 +101,44 @@ export async function createMenuItemAction(
   categoryId: string,
   formData: FormData,
 ) {
-  const { db, tenant } = await requireDashboardTenant(tenantSlug);
-  // Free includes 50 menu items; paid plans are unlimited.
+  const { db, tenant, withTenant } = await requireDashboardTenant(tenantSlug);
   await assertCanCreate(db, tenant, "menuItems");
 
-  const priceDollars = Number(formData.get("price") ?? 0);
-  await menuService.createMenuItem({
-    categoryId,
-    name: formData.get("name"),
-    description: formData.get("description") || undefined,
-    basePriceCents: Math.round(priceDollars * 100),
-  });
+  const image = formData.get("image");
+
+  await withTenant(() =>
+    menuService.createMenuItem({
+      categoryId,
+      name: formData.get("name"),
+      description: formData.get("description") || undefined,
+      basePriceCents: priceToCents(formData.get("price")),
+      images: typeof image === "string" && image ? [image] : [],
+      dietaryTags: tagList(formData.get("dietaryTags")),
+    }),
+  );
+  revalidatePath(`/dashboard/${tenantSlug}/menu`);
+}
+
+export async function updateMenuItemAction(
+  tenantSlug: string,
+  itemId: string,
+  formData: FormData,
+) {
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+
+  const image = formData.get("image");
+
+  // The service checks that any image URL is this tenant's own upload,
+  // and deletes the file this save replaces.
+  await withTenant(() =>
+    menuService.updateMenuItem(itemId, {
+      name: formData.get("name"),
+      description: formData.get("description") || undefined,
+      basePriceCents: priceToCents(formData.get("price")),
+      images: typeof image === "string" && image ? [image] : [],
+      dietaryTags: tagList(formData.get("dietaryTags")),
+    }),
+  );
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }
 
@@ -69,31 +147,31 @@ export async function toggleMenuItemAction(
   itemId: string,
   isAvailable: boolean,
 ) {
-  await requireDashboardTenant(tenantSlug);
-  await menuService.toggleMenuItemAvailability(itemId, isAvailable);
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() => menuService.toggleMenuItemAvailability(itemId, isAvailable));
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }
 
 export async function deleteMenuItemAction(tenantSlug: string, itemId: string) {
-  await requireDashboardTenant(tenantSlug);
-  await menuService.deleteMenuItem(itemId);
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() => menuService.deleteMenuItem(itemId));
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }
 
 export async function duplicateMenuItemAction(tenantSlug: string, itemId: string) {
-  await requireDashboardTenant(tenantSlug);
-  await menuService.duplicateMenuItem(itemId);
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() => menuService.duplicateMenuItem(itemId));
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }
 
 export async function reorderCategoriesAction(tenantSlug: string, ids: string[]) {
-  await requireDashboardTenant(tenantSlug);
-  await menuService.reorderCategories({ ids });
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() => menuService.reorderCategories({ ids }));
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }
 
 export async function reorderMenuItemsAction(tenantSlug: string, ids: string[]) {
-  await requireDashboardTenant(tenantSlug);
-  await menuService.reorderMenuItems({ ids });
+  const { withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() => menuService.reorderMenuItems({ ids }));
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }

@@ -1,46 +1,62 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import type { SerializedOrder } from "@/modules/orders/order.service";
 import { useLiveOrders } from "@/lib/use-live-orders";
-import { useOrderSound } from "@/lib/use-order-sound";
-import { staffAcceptOrderAction, staffReadyOrderAction } from "./actions";
+import { useOrderAlerts } from "@/lib/use-order-alerts";
+import { StaffHeader } from "@/components/staff/staff-header";
+import { RejectDialog } from "@/components/orders/reject-dialog";
+import {
+  staffAcceptOrderAction,
+  staffReadyOrderAction,
+  staffRejectOrderAction,
+} from "./actions";
 
 /**
  * Kitchen Display System (PROMPT.md §6.3).
  *
  * Designed for a tablet propped at arm's length in a hot, bright, busy
- * room: dark ground, oversized type, one tap per action, and no
- * hover-only affordances. Cards are colour-coded by how long the order
- * has been waiting, so the thing to cook next is obvious without
- * reading a single timestamp.
+ * room: a light ground that stays readable under kitchen lighting,
+ * oversized type, and one tap per action with no hover-only
+ * affordances. Cards are colour-coded by how long the order has been
+ * waiting, so the thing to cook next is obvious without reading a
+ * single timestamp.
+ *
+ * Every ticket shows its items outright. A cook should never have to
+ * tap a card to find out what to cook.
  */
 
 /** Age thresholds, in minutes, at which a ticket changes colour. */
 const WARN_AFTER_MIN = 8;
 const LATE_AFTER_MIN = 15;
 
+const TABS = ["ALL", "DINE_IN", "TAKEAWAY", "DELIVERY"] as const;
+
 export function KitchenDisplay({
   locationId,
+  currency,
   initialOrders,
 }: {
   locationId: string;
+  currency: string;
   initialOrders: SerializedOrder[];
 }) {
-  const { isArmed, arm, play } = useOrderSound();
-
-  const notify = useCallback(() => play(), [play]);
+  const { announce, isFullyArmed, enableAll } = useOrderAlerts();
 
   const { orders, connection, patchOrder } = useLiveOrders({
     streamUrl: `/api/staff/realtime?locationId=${encodeURIComponent(locationId)}`,
     resyncUrl: `/api/staff/orders?locationId=${encodeURIComponent(locationId)}`,
     initialOrders,
-    onNewOrder: notify,
+    onNewOrder: announce,
   });
+
+  const money = useMemo(() => makeMoneyFormatter(currency), [currency]);
 
   // Re-render once a minute so the age colours and "12m" labels stay
   // truthful on a screen nobody touches for an hour.
   const [, setTick] = useState(0);
+  const [activeTab, setActiveTab] = useState<"ALL" | "DINE_IN" | "TAKEAWAY" | "DELIVERY">("ALL");
+
   useEffect(() => {
     const timer = setInterval(() => setTick((value) => value + 1), 60_000);
     return () => clearInterval(timer);
@@ -48,32 +64,72 @@ export function KitchenDisplay({
 
   const queue = orders
     .filter((order) => order.status === "PENDING" || order.status === "ACCEPTED")
+    .filter((order) => activeTab === "ALL" || order.type === activeTab)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
+  const waiting = queue.filter((order) => order.status === "PENDING").length;
+
   return (
-    <div className="min-h-screen bg-zinc-950 px-4 py-5 text-zinc-50">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">Kitchen</h1>
-        <div className="flex items-center gap-4">
-          {!isArmed && (
-            <button
-              type="button"
-              onClick={() => void arm()}
-              className="rounded-lg bg-red-600 px-4 py-2 text-base font-semibold"
-            >
-              Tap to enable sound
-            </button>
-          )}
-          <StatusDot state={connection} />
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <StaffHeader
+        title="Kitchen"
+        subtitle={
+          queue.length === 0
+            ? "Nothing cooking"
+            : `${queue.length} in the queue${waiting > 0 ? ` · ${waiting} new` : ""}`
+        }
+        connection={connection}
+        isFullyArmed={isFullyArmed}
+        onEnableAlerts={() => void enableAll()}
+      >
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          {TABS.map((tab) => {
+            const count =
+              tab === "ALL"
+                ? queue.length
+                : queue.filter((order) => order.type === tab).length;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  activeTab === tab
+                    ? "bg-zinc-900 text-white"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                }`}
+              >
+                {tab.replace("_", " ")}
+                {count > 0 && (
+                  <span
+                    className={`rounded-full px-1.5 text-xs tabular-nums ${
+                      activeTab === tab ? "bg-white/20" : "bg-white"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-      </header>
+      </StaffHeader>
 
       {queue.length === 0 ? (
-        <p className="mt-24 text-center text-2xl text-zinc-500">No orders</p>
+        <div className="flex flex-col items-center justify-center px-6 py-32 text-center">
+          <span className="text-5xl">🍽️</span>
+          <p className="mt-4 text-2xl font-semibold text-zinc-700">All caught up</p>
+          <p className="mt-1 text-zinc-500">New orders appear here automatically.</p>
+        </div>
       ) : (
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 px-4 py-5 sm:px-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {queue.map((order) => (
-            <Ticket key={order.id} order={order} onOptimistic={patchOrder} />
+            <Ticket
+              key={order.id}
+              order={order}
+              money={money}
+              onOptimistic={patchOrder}
+            />
           ))}
         </div>
       )}
@@ -81,109 +137,200 @@ export function KitchenDisplay({
   );
 }
 
-function StatusDot({ state }: { state: "connecting" | "live" | "offline" }) {
-  const map = {
-    connecting: { dot: "bg-amber-400", label: "Connecting" },
-    live: { dot: "bg-green-400", label: "Live" },
-    // Named explicitly rather than just "Offline": staff need to know
-    // the screen is still catching up, not that it has given up.
-    offline: { dot: "bg-red-500", label: "Reconnecting" },
-  }[state];
-
-  return (
-    <span className="flex items-center gap-2 text-base text-zinc-300">
-      <span className={`h-3 w-3 rounded-full ${map.dot}`} aria-hidden />
-      {map.label}
-    </span>
-  );
+function makeMoneyFormatter(currency: string) {
+  let format: Intl.NumberFormat | null = null;
+  try {
+    format = new Intl.NumberFormat(undefined, { style: "currency", currency });
+  } catch {
+    // An unrecognised code must not blank out a ticket's prices.
+  }
+  return (cents: number) =>
+    format ? format.format(cents / 100) : (cents / 100).toFixed(2);
 }
 
 function Ticket({
   order,
+  money,
   onOptimistic,
 }: {
   order: SerializedOrder;
+  money: (cents: number) => string;
   onOptimistic: (id: string, changes: Partial<SerializedOrder>) => void;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [isRejecting, setRejecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const minutes = minutesSince(order.createdAt);
 
   // Age drives the whole card, not a small badge — a late ticket has to
   // be visible from across the pass.
-  const tone =
-    minutes >= LATE_AFTER_MIN
-      ? "border-red-500 bg-red-950"
-      : minutes >= WARN_AFTER_MIN
-        ? "border-amber-500 bg-amber-950"
-        : "border-zinc-700 bg-zinc-900";
+  const isLate = minutes >= LATE_AFTER_MIN;
+  const isWarn = minutes >= WARN_AFTER_MIN;
+  const tone = isLate
+    ? "border-red-500 bg-red-50"
+    : isWarn
+      ? "border-amber-400 bg-amber-50"
+      : "border-zinc-200 bg-white";
 
   const run = (action: () => Promise<void>, optimistic: Partial<SerializedOrder>) => {
+    setError(null);
     onOptimistic(order.id, optimistic);
     startTransition(() => {
-      void action().catch(() => {
+      void action().catch((cause: unknown) => {
         // Someone advanced it on another device. The next re-sync wins;
-        // revert so the screen never shows a state the server rejected.
+        // revert so the screen never shows a state the server rejected —
+        // but say why, or the button just looks broken.
         onOptimistic(order.id, { status: order.status });
+        setError(
+          cause instanceof Error && cause.message
+            ? cause.message
+            : "That didn't go through. Try again.",
+        );
       });
     });
   };
 
+  const orderTime = new Date(order.createdAt).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   return (
     <article
-      className={`rounded-xl border-2 p-4 ${tone} ${isPending ? "opacity-50" : ""}`}
+      className={`flex flex-col overflow-hidden rounded-xl border-2 shadow-sm ${tone} ${
+        isPending ? "opacity-50" : ""
+      }`}
     >
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-2xl font-bold">#{order.orderNumber}</h2>
-        <span className="text-lg font-semibold tabular-nums">
-          {minutes}m
-        </span>
+      <div className="flex items-start justify-between gap-2 border-b border-black/5 px-4 py-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+            {order.type.replace("_", " ")}
+          </p>
+          <h2 className="text-2xl font-bold leading-tight text-zinc-900">
+            #{order.orderNumber}
+          </h2>
+        </div>
+
+        <div className="text-right">
+          {/* How long it has been waiting, which is the number the
+              kitchen actually works from. */}
+          <p
+            className={`text-2xl font-bold tabular-nums ${
+              isLate ? "text-red-600" : isWarn ? "text-amber-600" : "text-zinc-400"
+            }`}
+          >
+            {minutes}m
+          </p>
+          <p className="text-xs text-zinc-500 tabular-nums">{orderTime}</p>
+        </div>
       </div>
 
-      <p className="mt-0.5 text-sm font-medium tracking-wide text-zinc-400 uppercase">
-        {order.type.replace("_", " ")}
-        {order.tableLabel ? ` · Table ${order.tableLabel}` : ""}
-      </p>
+      <div className="flex items-center gap-2 border-b border-black/5 px-4 py-2 text-sm">
+        {order.tableLabel ? (
+          <span className="font-semibold text-zinc-800">Table {order.tableLabel}</span>
+        ) : (
+          <span className="text-zinc-600">{order.customerName || "Walk-in"}</span>
+        )}
+        {order.scheduledFor && (
+          <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">
+            for{" "}
+            {new Date(order.scheduledFor).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        )}
+      </div>
 
-      <ul className="mt-3 flex flex-col gap-2">
+      {/* Always visible: a cook must never tap a card to find out what
+          to cook. */}
+      <ul className="flex flex-1 flex-col gap-2 px-4 py-3">
         {order.items.map((item) => (
-          <li key={item.id} className="text-lg leading-snug">
-            <span className="font-bold tabular-nums">{item.quantity}×</span>{" "}
-            {item.name}
-            {item.note && (
-              <span className="block text-base text-amber-300">↳ {item.note}</span>
-            )}
+          <li key={item.id} className="flex justify-between gap-3 text-base">
+            <span className="text-zinc-900">
+              <span className="font-bold tabular-nums">{item.quantity}×</span>{" "}
+              <span className="font-medium">{item.name}</span>
+              {item.note && (
+                <span className="mt-0.5 block text-sm font-medium text-amber-700">
+                  ↳ {item.note}
+                </span>
+              )}
+            </span>
+            <span className="shrink-0 text-sm tabular-nums text-zinc-500">
+              {money(item.lineTotalCents)}
+            </span>
           </li>
         ))}
       </ul>
 
       {order.note && (
-        <p className="mt-3 rounded-lg bg-amber-500/20 px-3 py-2 text-base text-amber-200">
+        <p className="mx-4 mb-3 rounded-lg bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900">
           ⚠ {order.note}
         </p>
       )}
 
-      <div className="mt-4 flex gap-2">
+      {(order.customerPhone || order.deliveryAddress) && (
+        <div className="mx-4 mb-3 rounded-lg bg-black/[0.03] px-3 py-2 text-sm text-zinc-700">
+          {order.customerPhone && <p>{order.customerPhone}</p>}
+          {order.deliveryAddress && <p className="mt-0.5">{order.deliveryAddress}</p>}
+        </div>
+      )}
+
+      {error && (
+        <p
+          role="alert"
+          className="mx-4 mb-3 rounded-lg bg-red-100 px-3 py-2 text-sm font-medium text-red-800"
+        >
+          {error}
+        </p>
+      )}
+
+      <div className="mt-auto flex gap-2 border-t border-black/5 p-3">
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => setRejecting(true)}
+          className="rounded-lg bg-white px-4 py-3 text-sm font-bold text-red-700 ring-1 ring-red-200 transition-colors hover:bg-red-50 disabled:opacity-50"
+        >
+          Reject
+        </button>
+
+        {/* Only while it is still new: once the kitchen has started, the
+            next thing to say is that it is ready. */}
         {order.status === "PENDING" && (
           <button
             type="button"
             disabled={isPending}
-            onClick={() =>
-              run(() => staffAcceptOrderAction(order.id), { status: "ACCEPTED" })
-            }
-            className="flex-1 rounded-lg border-2 border-zinc-600 py-3 text-lg font-semibold disabled:opacity-50"
+            onClick={() => run(() => staffAcceptOrderAction(order.id), { status: "ACCEPTED" })}
+            className="flex-1 rounded-lg bg-white px-4 py-3 text-sm font-bold text-zinc-800 ring-1 ring-zinc-300 transition-colors hover:bg-zinc-50 disabled:opacity-50"
           >
-            Start
+            Start cooking
           </button>
         )}
+
         <button
           type="button"
           disabled={isPending}
           onClick={() => run(() => staffReadyOrderAction(order.id), { status: "READY" })}
-          className="flex-1 rounded-lg bg-green-600 py-3 text-lg font-bold disabled:opacity-50"
+          className="flex-1 rounded-lg bg-green-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
         >
-          Ready
+          ✓ Ready
         </button>
       </div>
+
+      {isRejecting && (
+        <RejectDialog
+          orderNumber={order.orderNumber}
+          onClose={() => setRejecting(false)}
+          onConfirm={(reason) => {
+            setRejecting(false);
+            run(() => staffRejectOrderAction(order.id, reason), {
+              status: "REJECTED",
+              rejectionReason: reason || null,
+            });
+          }}
+        />
+      )}
     </article>
   );
 }

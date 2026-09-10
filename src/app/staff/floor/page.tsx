@@ -18,8 +18,8 @@ export default async function FloorPage() {
 
   if (!location) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-6 text-center">
-        <p className="text-xl text-zinc-400">
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-6 text-center">
+        <p className="text-xl text-zinc-500">
           No location is set up yet. Ask the owner to add one.
         </p>
       </div>

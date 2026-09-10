@@ -36,7 +36,7 @@ export function ItemAvailabilityToggle({
         })
       }
       className={`h-5 w-9 shrink-0 rounded-full transition-colors ${
-        isAvailable ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-700"
+        isAvailable ? "bg-blue-600" : "bg-zinc-300"
       } ${isPending ? "opacity-50" : ""}`}
     >
       <span
@@ -62,7 +62,7 @@ export function DuplicateItemButton({
       title="Duplicate"
       disabled={isPending}
       onClick={() => startTransition(() => duplicateMenuItemAction(tenantSlug, itemId))}
-      className="text-xs text-zinc-500 hover:text-zinc-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:text-zinc-50"
+      className="text-xs text-zinc-500 hover:text-zinc-900 disabled:opacity-50"
     >
       ⧉
     </button>
@@ -81,7 +81,7 @@ export function DeleteItemButton({ tenantSlug, itemId }: { tenantSlug: string; i
           startTransition(() => deleteMenuItemAction(tenantSlug, itemId));
         }
       }}
-      className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+      className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
     >
       ✕
     </button>

@@ -3,7 +3,15 @@ import { rawPrisma } from "@/server/db/client";
 import { forTenant } from "@/server/db/tenant-client";
 import { createTenantRecord } from "@/modules/tenants/tenant.repository";
 import { businessDateFor } from "../order-number";
-import { OrderError, placeOrder, trackOrder } from "../order.service";
+import { runWithTenant } from "@/server/tenant-context";
+import {
+  OrderError,
+  placeOrder,
+  rejectMyOrder,
+  trackOrder,
+  transitionMyOrder,
+} from "../order.service";
+import { DELIVERY_FEE_CENTS } from "../order.schema";
 
 /**
  * Ordering, exercised against the real database — the parts that would
@@ -88,6 +96,73 @@ describe("orders", () => {
     await rawPrisma.$disconnect();
   });
 
+  describe("staff transitions", () => {
+    /** What a Server Action does: authenticate, then call the service. */
+    const asAction = <T>(fn: () => Promise<T>) => runWithTenant(tenantId, "order-test", fn);
+
+    async function freshOrder() {
+      const { order } = await placeOrder({
+        publicCode,
+        type: "DINE_IN",
+        tableId: "the QR code decides the table",
+        items: [{ menuItemId: ramenId, quantity: 1 }],
+      });
+      return order;
+    }
+
+    it("refuses to run outside a tenant context rather than querying unscoped", async () => {
+      const order = await freshOrder();
+      await expect(
+        transitionMyOrder({ orderId: order.id, status: "ACCEPTED" }),
+      ).rejects.toThrow(/no tenant context/i);
+    });
+
+    it("accepts and readies an order the way a Server Action calls it", async () => {
+      // The regression: the board's buttons awaited an auth check before
+      // calling the service, which lost the context — so every tap
+      // silently reverted and looked like a dead button.
+      const order = await freshOrder();
+
+      const accepted = await asAction(async () => {
+        await Promise.resolve(); // stand-in for the awaited auth check
+        return transitionMyOrder({ orderId: order.id, status: "ACCEPTED" });
+      });
+      expect(accepted.status).toBe("ACCEPTED");
+
+      const ready = await asAction(() =>
+        transitionMyOrder({ orderId: order.id, status: "READY" }),
+      );
+      expect(ready.status).toBe("READY");
+
+      const completed = await asAction(() =>
+        transitionMyOrder({ orderId: order.id, status: "COMPLETED" }),
+      );
+      expect(completed.status).toBe("COMPLETED");
+    });
+
+    it("records the reason a rejected order was turned away", async () => {
+      const order = await freshOrder();
+
+      const rejected = await asAction(() =>
+        rejectMyOrder(order.id, { reason: "Item sold out" }),
+      );
+      expect(rejected.status).toBe("REJECTED");
+      // Shown to the guest on their tracking page, so it has to persist.
+      expect(rejected.rejectionReason).toBe("Item sold out");
+    });
+
+    it("refuses to re-transition an order that is already finished", async () => {
+      const order = await freshOrder();
+      await asAction(() => rejectMyOrder(order.id, { reason: "Closing soon" }));
+
+      // Rewriting a resolved order would quietly change history the
+      // guest and the kitchen have both already seen.
+      await expect(
+        asAction(() => transitionMyOrder({ orderId: order.id, status: "ACCEPTED" })),
+      ).rejects.toThrow(/already rejected/i);
+    });
+  });
+
   it("prices the order from the database, not from the request", async () => {
     const { order } = await placeOrder({
       publicCode,
@@ -102,6 +177,45 @@ describe("orders", () => {
     expect(order.items[0]?.unitPriceCents).toBe(895);
     // The line snapshots the name so a later rename cannot rewrite it.
     expect(order.items[0]?.nameSnapshot).toBe("Ramen");
+  });
+
+  it("seats a dine-in order at the table the diner picked", async () => {
+    // People move seats between scanning and ordering, so the picker's
+    // choice wins — as long as it is a table in the same location.
+    const db = forTenant(tenantId);
+    const moved = await db.table.create({
+      data: {
+        tenantId,
+        locationId,
+        label: "9",
+        publicCode: `MOV${Date.now()}`.slice(0, 12),
+      },
+    });
+
+    const { order } = await placeOrder({
+      publicCode,
+      type: "DINE_IN",
+      tableId: moved.id,
+      items: [{ menuItemId: ramenId, quantity: 1 }],
+    });
+
+    expect(order.tableId).toBe(moved.id);
+  });
+
+  it("falls back to the scanned table when the picked one is unknown", async () => {
+    const scanned = await forTenant(tenantId).table.findFirst({
+      where: { publicCode },
+      select: { id: true },
+    });
+
+    const { order } = await placeOrder({
+      publicCode,
+      type: "DINE_IN",
+      tableId: "not-a-real-table-id",
+      items: [{ menuItemId: ramenId, quantity: 1 }],
+    });
+
+    expect(order.tableId).toBe(scanned?.id);
   });
 
   it("refuses an item that belongs to another tenant", async () => {
@@ -225,6 +339,22 @@ describe("orders", () => {
     expect(order.type).toBe("DELIVERY");
     // A delivery order is not tied to the scanned table.
     expect(order.tableId).toBeNull();
+    // And it carries the delivery fee on top of the subtotal — the same
+    // number the checkout sheet quoted before the diner tapped ORDER.
+    expect(order.deliveryFeeCents).toBe(DELIVERY_FEE_CENTS);
+    expect(order.totalCents).toBe(order.subtotalCents + DELIVERY_FEE_CENTS);
+  });
+
+  it("charges no delivery fee on an order that is not delivered", async () => {
+    const { order } = await placeOrder({
+      publicCode,
+      type: "TAKEAWAY",
+      items: [{ menuItemId: ramenId, quantity: 1 }],
+      customerName: "Ana",
+      customerPhone: "0123456789",
+    });
+    expect(order.deliveryFeeCents).toBe(0);
+    expect(order.totalCents).toBe(order.subtotalCents);
   });
 
   it("rejects an unknown table code without revealing anything", async () => {

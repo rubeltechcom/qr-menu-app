@@ -41,6 +41,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# runtime-written data: uploaded dish photos (see UPLOAD_DIR in .env.example).
+# In production this lives on a mounted volume outside the app directory.
+/var/
+
 # large local reference assets — not part of the deployable app
 *.mp4
 *.mov

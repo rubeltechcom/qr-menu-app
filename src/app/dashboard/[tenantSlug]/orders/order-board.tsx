@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import type { SerializedOrder } from "@/modules/orders/order.service";
-import { useOrderSound } from "@/lib/use-order-sound";
+import { useOrderAlerts } from "@/lib/use-order-alerts";
+import { RejectDialog } from "@/components/orders/reject-dialog";
 import { useLiveOrders } from "@/lib/use-live-orders";
 import {
   acceptOrderAction,
@@ -42,21 +43,13 @@ export function OrderBoard({
 }) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [hideCompleted, setHideCompleted] = useState(true);
-  const { isArmed, arm, play } = useOrderSound();
-
-  const notify = useCallback(
-    (order: SerializedOrder) => {
-      play();
-      showDesktopNotification(order);
-    },
-    [play],
-  );
+  const { announce, isFullyArmed, enableAll } = useOrderAlerts();
 
   const { orders, connection, patchOrder } = useLiveOrders({
     streamUrl: `/api/realtime/orders?tenant=${encodeURIComponent(tenantSlug)}&locationId=${encodeURIComponent(locationId)}`,
     resyncUrl: `/api/admin/orders?tenant=${encodeURIComponent(tenantSlug)}&locationId=${encodeURIComponent(locationId)}`,
     initialOrders,
-    onNewOrder: notify,
+    onNewOrder: announce,
   });
 
   const visible = useMemo(() => {
@@ -80,26 +73,26 @@ export function OrderBoard({
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
           Orders
         </h1>
         <ConnectionBadge state={connection} />
       </header>
 
-      {!isArmed && (
-        // The autoplay unlock. Browsers block programmatic audio until a
-        // real gesture, so this link is functional, not decorative.
+      {!isFullyArmed && (
+        // Functional, not decorative: browsers block programmatic audio
+        // until a real gesture, and the notification prompt needs one too.
         <button
           type="button"
-          onClick={() => void arm()}
-          className="mt-4 text-sm font-medium text-red-600 underline underline-offset-2 hover:text-red-700 dark:text-red-400"
+          onClick={() => void enableAll()}
+          className="mt-4 text-sm font-medium text-red-600 underline underline-offset-2 hover:text-red-700"
         >
-          Click here to enable sound for new orders
+          Click here to enable sound and alerts for new orders
         </button>
       )}
 
       <div className="mt-5 flex flex-wrap items-center gap-4">
-        <div className="flex overflow-hidden rounded-lg border border-zinc-300 dark:border-zinc-700">
+        <div className="flex overflow-hidden rounded-lg border border-zinc-300">
           {TYPE_TABS.map((tab) => (
             <button
               key={tab.value}
@@ -109,7 +102,7 @@ export function OrderBoard({
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 typeFilter === tab.value
                   ? "bg-blue-600 text-white"
-                  : "bg-transparent text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  : "bg-transparent text-zinc-600 hover:bg-zinc-100"
               }`}
             >
               {tab.label}
@@ -117,19 +110,19 @@ export function OrderBoard({
           ))}
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600">
           <input
             type="checkbox"
             checked={hideCompleted}
             onChange={(event) => setHideCompleted(event.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
+            className="h-4 w-4 rounded border-zinc-300"
           />
           hide done
         </label>
       </div>
 
       {visible.length === 0 ? (
-        <p className="mt-16 text-center text-lg text-zinc-500 dark:text-zinc-400">
+        <p className="mt-16 text-center text-lg text-zinc-500">
           No Orders
         </p>
       ) : (
@@ -151,12 +144,12 @@ export function OrderBoard({
 
 function ConnectionBadge({ state }: { state: "connecting" | "live" | "offline" }) {
   const copy = {
-    connecting: { label: "Connecting…", dot: "bg-amber-500", text: "text-amber-700 dark:text-amber-400" },
-    live: { label: "Live", dot: "bg-green-500", text: "text-green-700 dark:text-green-400" },
+    connecting: { label: "Connecting…", dot: "bg-amber-500", text: "text-amber-700" },
+    live: { label: "Live", dot: "bg-green-500", text: "text-green-700" },
     offline: {
       label: "Reconnecting — still checking for orders",
       dot: "bg-red-500",
-      text: "text-red-700 dark:text-red-400",
+      text: "text-red-700",
     },
   }[state];
 
@@ -180,19 +173,29 @@ function OrderCard({
   onOptimistic: (id: string, changes: Partial<SerializedOrder>) => void;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [isRejecting, setRejecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isResolved = RESOLVED.includes(order.status);
 
   const run = (
     action: () => Promise<void>,
     optimistic: Partial<SerializedOrder>,
   ) => {
+    setError(null);
     onOptimistic(order.id, optimistic);
     startTransition(() => {
-      void action().catch(() => {
-        // The server rejected it (already resolved elsewhere, most
-        // likely). The next re-sync restores the true state, so revert
-        // rather than leaving a wrong status on screen.
+      void action().catch((cause: unknown) => {
+        // Revert: the next re-sync restores the true state, and leaving
+        // a wrong status on screen would be worse.
         onOptimistic(order.id, { status: order.status });
+        // ...but say so. Silently snapping back looks exactly like a
+        // dead button, which is how a real failure went unnoticed here
+        // before: the staff tap, nothing happens, and they tap again.
+        setError(
+          cause instanceof Error && cause.message
+            ? cause.message
+            : "That didn't go through. Please try again.",
+        );
       });
     });
   };
@@ -201,20 +204,20 @@ function OrderCard({
     <article
       className={`rounded-xl border p-4 transition-opacity ${
         isResolved
-          ? "border-zinc-200 opacity-60 dark:border-zinc-800"
-          : "border-zinc-300 dark:border-zinc-700"
+          ? "border-zinc-200 opacity-60"
+          : "border-zinc-300"
       } ${isPending ? "opacity-50" : ""}`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="font-semibold text-zinc-900">
           {TYPE_LABEL[order.type]} #{order.orderNumber}
           {order.tableLabel && (
-            <span className="ml-2 font-normal text-zinc-500 dark:text-zinc-400">
+            <span className="ml-2 font-normal text-zinc-500">
               Table {order.tableLabel}
             </span>
           )}
         </h2>
-        <span className="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">
+        <span className="text-sm text-zinc-500 tabular-nums">
           {formatTime(order.createdAt)}
           {order.scheduledFor && ` · for ${formatTime(order.scheduledFor)}`}
         </span>
@@ -223,25 +226,25 @@ function OrderCard({
       <ul className="mt-3 flex flex-col gap-1">
         {order.items.map((item) => (
           <li key={item.id} className="flex justify-between gap-4 text-sm">
-            <span className="text-zinc-800 dark:text-zinc-200">
+            <span className="text-zinc-800">
               {item.quantity} × {item.name}
               {item.note && (
-                <span className="ml-2 text-zinc-500 dark:text-zinc-400">({item.note})</span>
+                <span className="ml-2 text-zinc-500">({item.note})</span>
               )}
             </span>
-            <span className="shrink-0 text-zinc-600 tabular-nums dark:text-zinc-400">
+            <span className="shrink-0 text-zinc-600 tabular-nums">
               {formatMoney(item.lineTotalCents, currency)}
             </span>
           </li>
         ))}
       </ul>
 
-      <p className="mt-3 border-t border-zinc-200 pt-2 text-right font-semibold text-zinc-900 tabular-nums dark:border-zinc-800 dark:text-zinc-50">
+      <p className="mt-3 border-t border-zinc-200 pt-2 text-right font-semibold text-zinc-900 tabular-nums">
         {formatMoney(order.totalCents, currency)}
       </p>
 
       {order.note && (
-        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
           ⚠ {order.note}
         </p>
       )}
@@ -263,11 +266,11 @@ function OrderCard({
       />
 
       {order.status === "REJECTED" ? (
-        <p className="mt-3 text-sm text-red-600 dark:text-red-400">
+        <p className="mt-3 text-sm text-red-600">
           Rejected{order.rejectionReason ? ` — ${order.rejectionReason}` : ""}
         </p>
       ) : order.status === "READY" || order.status === "COMPLETED" ? (
-        <p className="mt-3 text-sm text-green-700 dark:text-green-400">
+        <p className="mt-3 text-sm text-green-700">
           {order.status === "READY" ? "Ready" : "Completed"}
         </p>
       ) : (
@@ -275,15 +278,7 @@ function OrderCard({
           <button
             type="button"
             disabled={isPending}
-            onClick={() => {
-              const reason = prompt("Why are you rejecting this order? (optional)");
-              // prompt returns null on Cancel — don't reject in that case.
-              if (reason === null) return;
-              run(
-                () => rejectOrderAction(tenantSlug, order.id, reason),
-                { status: "REJECTED", rejectionReason: reason || null },
-              );
-            }}
+            onClick={() => setRejecting(true)}
             className="rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             ✕ Reject
@@ -296,7 +291,7 @@ function OrderCard({
               onClick={() =>
                 run(() => acceptOrderAction(tenantSlug, order.id), { status: "ACCEPTED" })
               }
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-semibold text-zinc-700 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200"
+              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-semibold text-zinc-700 disabled:opacity-50"
             >
               Accept
             </button>
@@ -322,10 +317,33 @@ function OrderCard({
           onClick={() =>
             run(() => completeOrderAction(tenantSlug, order.id), { status: "COMPLETED" })
           }
-          className="mt-3 text-sm font-medium text-zinc-500 underline underline-offset-2 disabled:opacity-50 dark:text-zinc-400"
+          className="mt-3 text-sm font-medium text-zinc-500 underline underline-offset-2 disabled:opacity-50"
         >
           Mark handed over
         </button>
+      )}
+
+      {error && (
+        <p
+          role="alert"
+          className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700"
+        >
+          {error}
+        </p>
+      )}
+
+      {isRejecting && (
+        <RejectDialog
+          orderNumber={order.orderNumber}
+          onClose={() => setRejecting(false)}
+          onConfirm={(reason) => {
+            setRejecting(false);
+            run(() => rejectOrderAction(tenantSlug, order.id, reason), {
+              status: "REJECTED",
+              rejectionReason: reason || null,
+            });
+          }}
+        />
       )}
     </article>
   );
@@ -352,12 +370,12 @@ function PaymentRow({
 
   const tone =
     order.paymentStatus === "PAID"
-      ? "text-green-700 dark:text-green-400"
+      ? "text-green-700"
       : order.paymentStatus === "FAILED"
-        ? "text-red-600 dark:text-red-400"
+        ? "text-red-600"
         : order.paymentStatus === "REFUNDED" || order.paymentStatus === "PARTIALLY_REFUNDED"
-          ? "text-amber-700 dark:text-amber-400"
-          : "text-zinc-500 dark:text-zinc-400";
+          ? "text-amber-700"
+          : "text-zinc-500";
 
   const label =
     order.paymentStatus === "PAID"
@@ -376,7 +394,7 @@ function PaymentRow({
     (order.paymentStatus === "PAID" || order.paymentStatus === "PARTIALLY_REFUNDED");
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-2">
       <span className={`text-sm font-medium ${tone}`}>{label}</span>
 
       {order.paymentStatus !== "PAID" &&
@@ -390,7 +408,7 @@ function PaymentRow({
                 void markPaidAtCounterAction(tenantSlug, order.id);
               })
             }
-            className="text-xs font-medium text-zinc-600 underline underline-offset-2 disabled:opacity-50 dark:text-zinc-400"
+            className="text-xs font-medium text-zinc-600 underline underline-offset-2 disabled:opacity-50"
           >
             Mark paid at counter
           </button>
@@ -416,7 +434,7 @@ This cannot be undone.`,
               void refundOrderAction(tenantSlug, payment.id, reason);
             });
           }}
-          className="text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-50 dark:text-red-400"
+          className="text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-50"
         >
           Refund
         </button>
@@ -432,8 +450,8 @@ function providerLabel(provider: string): string {
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <>
-      <dt className="text-zinc-500 dark:text-zinc-400">{label}</dt>
-      <dd className="text-zinc-800 dark:text-zinc-200">{value}</dd>
+      <dt className="text-zinc-500">{label}</dt>
+      <dd className="text-zinc-800">{value}</dd>
     </>
   );
 }
@@ -456,32 +474,3 @@ function formatMoney(cents: number, currency: string): string {
   }
 }
 
-/**
- * Desktop notification, so a kitchen with the board behind another
- * window still finds out. Permission is requested on the first new order
- * rather than on page load — asking before the staff have seen why is
- * the pattern browsers now penalise.
- */
-function showDesktopNotification(order: SerializedOrder) {
-  if (typeof Notification === "undefined") return;
-
-  const show = () => {
-    try {
-      new Notification("New order received", {
-        body: `${TYPE_LABEL[order.type]} #${order.orderNumber}`,
-        tag: order.id,
-      });
-    } catch {
-      // Some browsers throw on constructing Notification outside a
-      // service worker; the sound and on-screen card still fire.
-    }
-  };
-
-  if (Notification.permission === "granted") {
-    show();
-  } else if (Notification.permission !== "denied") {
-    void Notification.requestPermission().then((result) => {
-      if (result === "granted") show();
-    });
-  }
-}

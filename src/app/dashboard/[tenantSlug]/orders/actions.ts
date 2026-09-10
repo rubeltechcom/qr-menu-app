@@ -13,33 +13,43 @@ import { rejectMyOrder, transitionMyOrder } from "@/modules/orders/order.service
  * publishes to that stream, so every open tab updates. Revalidating
  * would additionally re-render the page under the live list and make
  * the two fight.
+ *
+ * Service calls go inside `withTenant`. The order service resolves its
+ * own tenant-scoped client from AsyncLocalStorage, and that store does
+ * not survive the await on requireDashboardTenant.
  */
 
 export async function acceptOrderAction(tenantSlug: string, orderId: string) {
-  const { session } = await requireDashboardTenant(tenantSlug);
-  await transitionMyOrder({
-    orderId,
-    status: "ACCEPTED",
-    actorUserId: session.user.id,
-  });
+  const { session, withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() =>
+    transitionMyOrder({
+      orderId,
+      status: "ACCEPTED",
+      actorUserId: session.user.id,
+    }),
+  );
 }
 
 export async function readyOrderAction(tenantSlug: string, orderId: string) {
-  const { session } = await requireDashboardTenant(tenantSlug);
-  await transitionMyOrder({
-    orderId,
-    status: "READY",
-    actorUserId: session.user.id,
-  });
+  const { session, withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() =>
+    transitionMyOrder({
+      orderId,
+      status: "READY",
+      actorUserId: session.user.id,
+    }),
+  );
 }
 
 export async function completeOrderAction(tenantSlug: string, orderId: string) {
-  const { session } = await requireDashboardTenant(tenantSlug);
-  await transitionMyOrder({
-    orderId,
-    status: "COMPLETED",
-    actorUserId: session.user.id,
-  });
+  const { session, withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() =>
+    transitionMyOrder({
+      orderId,
+      status: "COMPLETED",
+      actorUserId: session.user.id,
+    }),
+  );
 }
 
 export async function rejectOrderAction(
@@ -47,6 +57,8 @@ export async function rejectOrderAction(
   orderId: string,
   reason: string,
 ) {
-  const { session } = await requireDashboardTenant(tenantSlug);
-  await rejectMyOrder(orderId, { reason: reason || undefined }, session.user.id);
+  const { session, withTenant } = await requireDashboardTenant(tenantSlug);
+  await withTenant(() =>
+    rejectMyOrder(orderId, { reason: reason || undefined }, session.user.id),
+  );
 }

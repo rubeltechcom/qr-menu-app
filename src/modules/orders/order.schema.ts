@@ -2,6 +2,20 @@ import { z } from "zod";
 
 export const ORDER_TYPES = ["DINE_IN", "TAKEAWAY", "DELIVERY"] as const;
 
+/**
+ * What a delivery costs, in the location's minor unit.
+ *
+ * A flat fee for now, and it lives here rather than in the service so
+ * the storefront can quote the diner the same number the order is
+ * actually written with — a checkout that shows one total and files
+ * another is worse than showing no total at all. (The service is
+ * server-only; a client component cannot import from it.)
+ *
+ * When per-location pricing arrives this becomes a Location column and
+ * both sides read it from there instead.
+ */
+export const DELIVERY_FEE_CENTS = 5000;
+
 const cartLineSchema = z.object({
   menuItemId: z.string().min(1),
   quantity: z.number().int().min(1).max(99),

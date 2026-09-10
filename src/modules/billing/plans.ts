@@ -59,7 +59,10 @@ export const PLANS: Record<PlanId, Plan> = {
     yearlyPriceCents: null,
     limits: {
       locations: 1,
-      menuItems: 50,
+      // Unlimited: a restaurant should never have to pay to finish
+      // typing in its own menu. What Free is limited to is *one*
+      // location — that is the line the paid tiers sit above.
+      menuItems: null,
       tables: 10,
       staffAccounts: 2,
       translationLanguages: 0,

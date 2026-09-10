@@ -3,7 +3,7 @@
 import type { OrderStatus } from "@prisma/client";
 import { requireStaffSession } from "@/lib/require-staff-session";
 import { runWithTenant } from "@/server/tenant-context";
-import { transitionMyOrder } from "@/modules/orders/order.service";
+import { rejectMyOrder, transitionMyOrder } from "@/modules/orders/order.service";
 
 /**
  * Kitchen and waiter actions.
@@ -37,4 +37,21 @@ export async function staffReadyOrderAction(orderId: string) {
 
 export async function staffCompleteOrderAction(orderId: string) {
   await advance(orderId, "COMPLETED");
+}
+
+/**
+ * Turning an order away, with the reason the guest will see.
+ *
+ * Separate from advance() because a rejection carries a reason and goes
+ * through rejectMyOrder's validation, and because it is the one action
+ * here the guest is told about directly.
+ */
+export async function staffRejectOrderAction(orderId: string, reason: string) {
+  const session = await requireStaffSession();
+
+  // Returns nothing, like the actions above: the updated order reaches
+  // every screen over the realtime stream, not through this call.
+  await runWithTenant(session.tenantId, "", () =>
+    rejectMyOrder(orderId, { reason: reason || undefined }, session.userId),
+  );
 }

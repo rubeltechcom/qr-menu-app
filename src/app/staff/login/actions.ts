@@ -8,7 +8,7 @@ import {
   STAFF_SESSION_COOKIE_NAME,
   STAFF_SESSION_MAX_AGE,
 } from "@/lib/staff-session";
-import { rawPrisma } from "@/server/db/client";
+import { findTenantForStaffLogin } from "@/modules/auth/staff-login.repository";
 
 export interface StaffLoginFormState {
   error?: string;
@@ -18,22 +18,33 @@ export async function staffLoginAction(
   _prevState: StaffLoginFormState,
   formData: FormData,
 ): Promise<StaffLoginFormState> {
-  const tenantSlug = formData.get("tenantSlug");
-  const pin = formData.get("pin");
+  const rawSlug = formData.get("tenantSlug");
+  const rawPin = formData.get("pin");
 
-  if (typeof tenantSlug !== "string" || typeof pin !== "string" || !tenantSlug || !pin) {
-    return { error: "Enter your restaurant and PIN." };
+  // Trimmed before the emptiness check: a tablet's autocorrect adds a
+  // trailing space readily, and " " is not a restaurant name.
+  const tenantSlug = typeof rawSlug === "string" ? rawSlug.trim().toLowerCase() : "";
+  const pin = typeof rawPin === "string" ? rawPin.trim() : "";
+
+  if (!tenantSlug) {
+    return { error: "Enter your restaurant name." };
+  }
+  if (!pin) {
+    return { error: "Enter your PIN." };
   }
 
   // Resolving by slug here (rather than trusting a hostname header) so
   // the same PIN screen works whether staff reach it via the platform
   // subdomain or a kiosk bookmark that predates a custom domain.
-  const tenant = await rawPrisma.tenant.findUnique({
-    where: { slug: tenantSlug.toLowerCase() },
-    select: { id: true },
-  });
+  //
+  // Goes through the staff-login repository because "tenants" is
+  // RLS-protected and there is no session yet to satisfy the ordinary
+  // policies — see the note there.
+  const tenant = await findTenantForStaffLogin(tenantSlug);
   if (!tenant) {
-    return { error: "Restaurant not found." };
+    // Names the value that failed: staff mistype the slug constantly,
+    // and "not found" alone gives them nothing to correct.
+    return { error: `No restaurant called "${tenantSlug}". Check the spelling.` };
   }
 
   const result = await verifyStaffPin(tenant.id, pin);

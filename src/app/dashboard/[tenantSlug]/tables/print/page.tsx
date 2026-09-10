@@ -44,10 +44,10 @@ export default async function PrintTablesPage({
 
       <div className="no-print mb-8 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-xl font-semibold text-zinc-900">
             Print QR codes
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-zinc-600">
             {cards.length} {cards.length === 1 ? "table" : "tables"} — cut along the
             lines and stick one on each table.
           </p>
@@ -55,17 +55,17 @@ export default async function PrintTablesPage({
         {/* Rendered as a plain link rather than a print button: a button
             needs client JS for window.print(), and the browser's own
             Ctrl/Cmd+P does the same job on a page built for it. */}
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Press <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs dark:border-zinc-700">Ctrl</kbd>
+        <p className="text-sm text-zinc-500">
+          Press <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">Ctrl</kbd>
           {" / "}
-          <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs dark:border-zinc-700">⌘</kbd>
+          <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">⌘</kbd>
           {" + "}
-          <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs dark:border-zinc-700">P</kbd> to print
+          <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">P</kbd> to print
         </p>
       </div>
 
       {cards.length === 0 ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-zinc-600">
           No tables yet — add some first.
         </p>
       ) : (
@@ -75,10 +75,10 @@ export default async function PrintTablesPage({
               key={card.id}
               className="qr-card flex flex-col items-center rounded-lg border border-dashed border-zinc-300 p-4 text-center print:border-zinc-400"
             >
-              <p className="text-sm font-semibold text-zinc-900 print:text-black dark:text-zinc-50">
+              <p className="text-sm font-semibold text-zinc-900 print:text-black">
                 {tenant.name}
               </p>
-              <p className="mt-0.5 text-xs text-zinc-500 print:text-zinc-700 dark:text-zinc-400">
+              <p className="mt-0.5 text-xs text-zinc-500 print:text-zinc-700">
                 Scan to see the menu &amp; order
               </p>
 
@@ -87,12 +87,12 @@ export default async function PrintTablesPage({
                 dangerouslySetInnerHTML={{ __html: card.svg }}
               />
 
-              <p className="mt-2 text-lg font-bold text-zinc-900 print:text-black dark:text-zinc-50">
+              <p className="mt-2 text-lg font-bold text-zinc-900 print:text-black">
                 Table {card.label}
               </p>
               {/* Printed under the code so a diner whose camera fails can
                   still reach the menu by typing it in. */}
-              <p className="font-mono text-[10px] tracking-wider text-zinc-500 print:text-zinc-700 dark:text-zinc-400">
+              <p className="font-mono text-[10px] tracking-wider text-zinc-500 print:text-zinc-700">
                 {card.publicCode}
               </p>
             </div>

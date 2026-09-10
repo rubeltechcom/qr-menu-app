@@ -4,10 +4,12 @@ import { useCallback } from "react";
 import { useLocalStorageState } from "@/lib/use-local-storage";
 
 export interface CartLine {
+  id: string; // unique per distinct combination
   menuItemId: string;
   name: string;
   unitPriceCents: number;
   quantity: number;
+  note?: string;
 }
 
 /** Stable identity so the storage hook's fallback never changes reference. */
@@ -43,31 +45,34 @@ export function useCart(publicCode: string) {
     parseCart,
   );
 
+  // These take the updater form so that repeated calls within a single
+  // render — tapping + several times before React re-renders — each build
+  // on the previous write instead of all starting from the same array.
   const add = useCallback(
-    (item: Omit<CartLine, "quantity">) => {
-      const index = lines.findIndex((line) => line.menuItemId === item.menuItemId);
-      if (index === -1) {
-        setLines([...lines, { ...item, quantity: 1 }]);
-        return;
-      }
-      const next = [...lines];
-      next[index] = { ...next[index]!, quantity: next[index]!.quantity + 1 };
-      setLines(next);
+    (item: Omit<CartLine, "quantity" | "id">) => {
+      const id = `${item.menuItemId}-${item.note ?? ""}`;
+      setLines((current) => {
+        const index = current.findIndex((line) => line.id === id);
+        if (index === -1) return [...current, { ...item, id, quantity: 1 }];
+        const next = [...current];
+        next[index] = { ...next[index]!, quantity: next[index]!.quantity + 1 };
+        return next;
+      });
     },
-    [lines, setLines],
+    [setLines],
   );
 
   const setQuantity = useCallback(
-    (menuItemId: string, quantity: number) => {
-      setLines(
+    (id: string, quantity: number) => {
+      setLines((current) =>
         quantity <= 0
-          ? lines.filter((line) => line.menuItemId !== menuItemId)
-          : lines.map((line) =>
-              line.menuItemId === menuItemId ? { ...line, quantity } : line,
+          ? current.filter((line) => line.id !== id)
+          : current.map((line) =>
+              line.id === id ? { ...line, quantity } : line,
             ),
       );
     },
-    [lines, setLines],
+    [setLines],
   );
 
   const clear = useCallback(() => setLines(EMPTY), [setLines]);
@@ -85,10 +90,12 @@ function isCartLine(value: unknown): value is CartLine {
   if (typeof value !== "object" || value === null) return false;
   const line = value as Partial<CartLine>;
   return (
+    (typeof line.id === "string" || typeof line.id === "undefined") &&
     typeof line.menuItemId === "string" &&
     typeof line.name === "string" &&
     typeof line.unitPriceCents === "number" &&
     typeof line.quantity === "number" &&
-    line.quantity > 0
+    line.quantity > 0 &&
+    (typeof line.note === "string" || typeof line.note === "undefined")
   );
 }

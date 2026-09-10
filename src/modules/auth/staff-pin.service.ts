@@ -1,5 +1,6 @@
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { rawPrisma } from "@/server/db/client";
+import { listStaffPinsForTenant } from "./staff-login.repository";
 
 /**
  * Staff PIN authentication — for waiters/kitchen on a shared tablet, per
@@ -47,10 +48,10 @@ export interface StaffLoginResult {
 export async function verifyStaffPin(tenantId: string, pin: string): Promise<StaffLoginResult | null> {
   if (!PIN_PATTERN.test(pin)) return null;
 
-  const candidates = await rawPrisma.staffPin.findMany({
-    where: { membership: { tenantId, deletedAt: null } },
-    include: { membership: { include: { user: true } } },
-  });
+  // Read through the staff-login window: "memberships" is RLS-protected
+  // and there is no session yet, so a plain query here returns nothing
+  // and every PIN would appear wrong.
+  const candidates = await listStaffPinsForTenant(tenantId);
 
   for (const candidate of candidates) {
     const matches = await verifyPassword(candidate.hashedPin, pin);

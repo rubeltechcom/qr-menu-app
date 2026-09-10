@@ -99,11 +99,11 @@ function PaymentMessage({
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col items-center justify-center px-6 text-center">
       {refreshSeconds && <meta httpEquiv="refresh" content={String(refreshSeconds)} />}
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{title}</h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{detail}</p>
+      <h1 className="text-2xl font-semibold text-zinc-900">{title}</h1>
+      <p className="mt-2 text-sm text-zinc-600">{detail}</p>
       <a
         href={`/order/${trackToken}`}
-        className="mt-6 rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+        className="mt-6 rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700"
       >
         Back to your order
       </a>

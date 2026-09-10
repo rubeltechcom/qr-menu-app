@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import * as tableService from "@/modules/tables/table.service";
+import * as tableRepo from "@/modules/tables/table.repository";
 import { runWithTenant, requireTenantContext } from "@/server/tenant-context";
 import * as menuRepo from "@/modules/menu/menu.repository";
 import * as locationRepo from "@/modules/locations/location.repository";
@@ -65,6 +66,13 @@ export default async function TableLandingPage({
           displayName: provider.displayName,
         }));
 
+  // Every table in this location, for the dine-in picker. The QR code
+  // still decides which table the order is filed against — this only lets
+  // a diner say they have moved to a different one.
+  const tables = (await tableRepo.listTables(db, table.locationId)).map(
+    (candidate) => ({ id: candidate.id, label: candidate.label }),
+  );
+
   const menus = await menuRepo.listMenusForLocation(db, table.locationId);
   const menu = menus[0] ? await menuRepo.getMenuWithContent(db, menus[0].id) : null;
 
@@ -72,6 +80,9 @@ export default async function TableLandingPage({
     .map((category) => ({
       id: category.id,
       name: category.name,
+      // Null when the owner has not chosen one; the storefront then
+      // guesses from the name, so older menus are unaffected.
+      icon: category.icon,
       items: category.items
         .filter((item) => item.isAvailable)
         .map((item) => ({
@@ -79,6 +90,8 @@ export default async function TableLandingPage({
           name: item.name,
           description: item.description,
           basePriceCents: item.basePriceCents,
+          images: item.images,
+          dietaryTags: item.dietaryTags,
         })),
     }))
     // A category whose every dish is 86'd would otherwise render as an
@@ -88,7 +101,8 @@ export default async function TableLandingPage({
   return (
     <Storefront
       publicCode={publicCode}
-      tableLabel={table.label}
+      tableId={table.id}
+      tables={tables}
       locationName={location?.name ?? ""}
       currency={location?.currency ?? "USD"}
       categories={categories}

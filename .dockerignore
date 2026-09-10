@@ -1,0 +1,28 @@
+# Never copied into the image.
+
+node_modules
+.next
+.git
+.github
+
+# Runtime-written uploads. These belong on a mounted volume, not in the
+# image — see UPLOAD_DIR in .env.example. Copying them in would both
+# bloat the build and be shadowed by the volume mount anyway.
+var
+
+# Secrets stay in the deployment platform's environment, never baked in.
+.env
+.env.*
+!.env.example
+
+# Local-only
+coverage
+*.tsbuildinfo
+.vscode
+.DS_Store
+Thumbs.db
+
+# Large local reference assets
+*.mp4
+*.mov
+*.mkv

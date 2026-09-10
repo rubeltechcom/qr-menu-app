@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npx vitest run src/modules/storage 2>&1)",
+      "PowerShell(npm install @aws-sdk/client-s3 2>&1)",
+      "PowerShell(npx tsc --noEmit 2>&1)"
+    ]
+  }
+}

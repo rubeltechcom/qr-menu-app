@@ -211,6 +211,11 @@ model Category {
   name        String
   description String?
   imageUrl    String?
+  // A single emoji the owner picks for the storefront's category strip.
+  // Null means "not chosen": the storefront then guesses one from the
+  // category's name, so menus created before this existed still render
+  // an icon rather than a blank tile.
+  icon        String?
   sortOrder   Int        @default(0)
   items       MenuItem[]
   createdAt   DateTime   @default(now())

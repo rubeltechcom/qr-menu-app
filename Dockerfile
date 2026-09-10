@@ -1,0 +1,74 @@
+# syntax=docker/dockerfile:1
+
+# Build image for Coolify (or any Docker host).
+#
+# Three stages so the runtime image carries neither the toolchain nor the
+# dev dependencies: install, build, then a slim runner around Next's
+# standalone output.
+
+# --- Dependencies ---------------------------------------------------------
+FROM node:22-alpine AS deps
+WORKDIR /app
+
+# Prisma's engines need this on Alpine.
+RUN apk add --no-cache libc6-compat
+
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+# `npm ci` runs the prepare script, which generates the Prisma client.
+RUN npm ci
+
+# --- Build ----------------------------------------------------------------
+FROM node:22-alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache libc6-compat
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# The build validates src/lib/env.ts, so give it placeholders. Real values
+# are injected at runtime; nothing here is baked into the image.
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV APP_URL=http://localhost:3000
+ENV APP_DOMAIN=localhost
+ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
+ENV REDIS_URL=redis://localhost:6379
+ENV AUTH_SECRET=build-time-placeholder-value-not-used-at-runtime
+
+RUN npx prisma generate && npm run build
+
+# --- Runtime --------------------------------------------------------------
+FROM node:22-alpine AS runner
+WORKDIR /app
+RUN apk add --no-cache libc6-compat
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Where uploaded dish photos are written.
+#
+# THIS MUST BE A MOUNTED VOLUME. In Coolify: Persistent Storage → add a
+# volume named e.g. qrmenu-uploads with the destination /data/uploads.
+# Without one, the directory lives in the container's writable layer and
+# every redeploy silently destroys every photo the restaurant uploaded —
+# the database rows survive, so the menu simply renders broken images.
+#
+# The volume is created root-owned by Docker, so ownership is set here,
+# before dropping to the unprivileged user, or the first upload fails
+# with EACCES. src/instrumentation.ts checks this at boot.
+ENV UPLOAD_DIR=/data/uploads
+RUN mkdir -p /data/uploads && chown -R node:node /data
+
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+# Kept so `npx prisma migrate deploy` can be run against this image.
+COPY --from=builder --chown=node:node /app/prisma ./prisma
+
+USER node
+VOLUME ["/data/uploads"]
+EXPOSE 3000
+
+CMD ["node", "server.js"]

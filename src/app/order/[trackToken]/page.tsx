@@ -40,41 +40,41 @@ export default async function TrackOrderPage({
   const copy = STATUS_COPY[order.status];
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-lg px-6 py-12">
+    <div className="mx-auto min-h-screen w-full max-w-lg bg-white px-6 py-12">
       {/* No JS needed: the page re-fetches itself while the order is
           still in progress, and stops once it is resolved. */}
       {(order.status === "PENDING" || order.status === "ACCEPTED") && (
         <meta httpEquiv="refresh" content="15" />
       )}
 
-      <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
+      <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
         Order #{order.orderNumber}
       </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900">
         {copy.title}
       </h1>
-      <p className="mt-2 text-zinc-600 dark:text-zinc-400">{copy.detail}</p>
+      <p className="mt-2 text-zinc-600">{copy.detail}</p>
 
       {order.status === "REJECTED" && order.rejectionReason && (
-        <p className="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
+        <p className="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
           {order.rejectionReason}
         </p>
       )}
 
-      <ul className="mt-8 flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+      <ul className="mt-8 flex flex-col gap-2 border-t border-zinc-200 pt-4">
         {order.items.map((item) => (
           <li key={item.id} className="flex justify-between gap-4 text-sm">
-            <span className="text-zinc-800 dark:text-zinc-200">
+            <span className="text-zinc-800">
               {item.quantity} × {item.nameSnapshot}
             </span>
-            <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-400">
+            <span className="shrink-0 tabular-nums text-zinc-600">
               {(item.lineTotalCents / 100).toFixed(2)}
             </span>
           </li>
         ))}
       </ul>
 
-      <p className="mt-4 flex justify-between border-t border-zinc-200 pt-3 font-semibold text-zinc-900 dark:border-zinc-800 dark:text-zinc-50">
+      <p className="mt-4 flex justify-between border-t border-zinc-200 pt-3 font-semibold text-zinc-900">
         <span>Total</span>
         <span className="tabular-nums">{(order.totalCents / 100).toFixed(2)}</span>
       </p>

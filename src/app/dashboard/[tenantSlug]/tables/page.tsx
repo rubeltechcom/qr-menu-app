@@ -19,10 +19,10 @@ export default async function TablesPage({
   if (locations.length === 0) {
     return (
       <div className="mx-auto max-w-lg px-6 py-16">
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-xl font-semibold text-zinc-900">
           Add your first location
         </h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-zinc-600">
           Tables belong to a location — add one to start printing QR codes.
         </p>
         <form action={createLocationAction.bind(null, tenantSlug)} className="mt-6 flex flex-col gap-3">
@@ -30,11 +30,11 @@ export default async function TablesPage({
             name="name"
             placeholder="Location name (e.g. Main St)"
             required
-            className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+            className="rounded-lg border border-zinc-300 px-3 py-2"
           />
           <button
             type="submit"
-            className="mt-2 rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+            className="mt-2 rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white"
           >
             Create location
           </button>
@@ -49,13 +49,13 @@ export default async function TablesPage({
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
           Tables — {location.name}
         </h1>
         {tables.length > 0 && (
           <Link
             href={`/dashboard/${tenantSlug}/tables/print`}
-            className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+            className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
           >
             Print all QR codes
           </Link>
@@ -72,8 +72,8 @@ export default async function TablesPage({
             ))}
           </div>
 
-          <div className="mt-10 border-t border-zinc-200 pt-6 dark:border-zinc-800">
-            <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Add another table</h2>
+          <div className="mt-10 border-t border-zinc-200 pt-6">
+            <h2 className="text-sm font-medium text-zinc-900">Add another table</h2>
             <form
               action={createTableAction.bind(null, tenantSlug, location.id)}
               className="mt-3 flex flex-wrap gap-2"
@@ -82,7 +82,7 @@ export default async function TablesPage({
                 name="label"
                 placeholder="Table name or number"
                 required
-                className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
               />
               <input
                 name="seats"
@@ -90,11 +90,11 @@ export default async function TablesPage({
                 min="1"
                 max="99"
                 placeholder="Seats"
-                className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
               />
               <button
                 type="submit"
-                className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+                className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white"
               >
                 Add
               </button>
@@ -113,9 +113,9 @@ export default async function TablesPage({
  */
 function EmptyState({ tenantSlug, locationId }: { tenantSlug: string; locationId: string }) {
   return (
-    <div className="mt-8 rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">
-      <h2 className="font-medium text-zinc-900 dark:text-zinc-50">Add your tables</h2>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+    <div className="mt-8 rounded-xl border border-zinc-200 p-6">
+      <h2 className="font-medium text-zinc-900">Add your tables</h2>
+      <p className="mt-1 text-sm text-zinc-600">
         Most places number their tables in a run. Create the whole range at once, then
         print the codes.
       </p>
@@ -125,15 +125,15 @@ function EmptyState({ tenantSlug, locationId }: { tenantSlug: string; locationId
         className="mt-5 flex flex-wrap items-end gap-3"
       >
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">Prefix (optional)</span>
+          <span className="text-xs text-zinc-500">Prefix (optional)</span>
           <input
             name="prefix"
             placeholder="e.g. T"
-            className="w-28 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-28 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">From</span>
+          <span className="text-xs text-zinc-500">From</span>
           <input
             name="from"
             type="number"
@@ -141,11 +141,11 @@ function EmptyState({ tenantSlug, locationId }: { tenantSlug: string; locationId
             max="999"
             defaultValue={1}
             required
-            className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">To</span>
+          <span className="text-xs text-zinc-500">To</span>
           <input
             name="to"
             type="number"
@@ -153,12 +153,12 @@ function EmptyState({ tenantSlug, locationId }: { tenantSlug: string; locationId
             max="999"
             defaultValue={12}
             required
-            className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           />
         </label>
         <button
           type="submit"
-          className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+          className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white"
         >
           Create tables
         </button>
@@ -177,12 +177,12 @@ async function TableCard({
   const svg = await tableQrSvg(table.publicCode, 160);
 
   return (
-    <div className="flex flex-col items-center rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+    <div className="flex flex-col items-center rounded-xl border border-zinc-200 p-4">
       <div className="flex w-full items-start justify-between">
         <div className="min-w-0">
-          <p className="truncate font-medium text-zinc-900 dark:text-zinc-50">{table.label}</p>
+          <p className="truncate font-medium text-zinc-900">{table.label}</p>
           {table.seats != null && (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">{table.seats} seats</p>
+            <p className="text-xs text-zinc-500">{table.seats} seats</p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -198,10 +198,10 @@ async function TableCard({
         dangerouslySetInnerHTML={{ __html: svg }}
       />
 
-      <p className="mt-2 font-mono text-[11px] tracking-wider text-zinc-500 dark:text-zinc-400">
+      <p className="mt-2 font-mono text-[11px] tracking-wider text-zinc-500">
         {table.publicCode}
       </p>
-      <p className="mt-1 w-full truncate text-center text-[10px] text-zinc-400 dark:text-zinc-500">
+      <p className="mt-1 w-full truncate text-center text-[10px] text-zinc-400">
         {tableStorefrontUrl(table.publicCode)}
       </p>
     </div>

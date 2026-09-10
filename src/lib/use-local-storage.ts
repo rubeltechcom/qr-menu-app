@@ -27,7 +27,7 @@ export function useLocalStorageState<T>(
   key: string,
   fallback: T,
   parse: (raw: string) => T | null,
-): [T, (next: T) => void] {
+): [T, (next: T | ((current: T) => T)) => void] {
   // The parsed value is cached against the raw string it came from, so
   // repeated snapshot reads return the same reference. Returning a fresh
   // object each time would spin useSyncExternalStore forever.
@@ -63,17 +63,25 @@ export function useLocalStorageState<T>(
 
   const value = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
+  // An updater function reads the *stored* value rather than whatever was
+  // captured at render, so several writes inside one render (tapping + on
+  // a dish three times in quick succession) each build on the last instead
+  // of all overwriting the same starting array.
   const setValue = useCallback(
-    (next: T) => {
+    (next: T | ((current: T) => T)) => {
+      const resolved =
+        typeof next === "function"
+          ? (next as (current: T) => T)(getSnapshot())
+          : next;
       try {
-        localStorage.setItem(key, JSON.stringify(next));
+        localStorage.setItem(key, JSON.stringify(resolved));
       } catch {
         // Full, blocked, or private mode. The write is lost, but the
         // notify below still refreshes readers from whatever is stored.
       }
       notify();
     },
-    [key],
+    [key, getSnapshot],
   );
 
   return [value, setValue];

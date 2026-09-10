@@ -7,6 +7,7 @@ import { resolveTableByPublicCode } from "@/modules/tables/table.repository";
 import { allocateOrderNumber, businessDateFor } from "./order-number";
 import * as repo from "./order.repository";
 import {
+  DELIVERY_FEE_CENTS,
   placeOrderSchema,
   rejectOrderSchema,
   type PlaceOrderInput,
@@ -118,9 +119,9 @@ export async function placeOrder(input: unknown) {
   });
 
   const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
-  // Delivery fees land in Phase 5 alongside payments; until then an
-  // order's total is its subtotal, stated explicitly rather than implied.
-  const deliveryFeeCents = 0;
+  // Only a delivery is charged one — an eat-in or collection order's
+  // total is its subtotal, stated explicitly rather than implied.
+  const deliveryFeeCents = parsed.type === "DELIVERY" ? DELIVERY_FEE_CENTS : 0;
   const totalCents = subtotalCents + deliveryFeeCents;
 
   const location = await db.location.findFirst({
@@ -129,6 +130,20 @@ export async function placeOrder(input: unknown) {
   });
   if (!location) {
     throw new OrderError("That table is not set up for ordering.", "TABLE_NOT_FOUND");
+  }
+
+  // The diner may pick a different table than the one they scanned —
+  // people move seats. Honour that, but only within the location the QR
+  // belongs to: a tampered id must not file an order against another
+  // restaurant's table. Anything unrecognised falls back to the scanned
+  // table rather than failing the order.
+  let seatedTableId = table.id;
+  if (parsed.type === "DINE_IN" && parsed.tableId && parsed.tableId !== table.id) {
+    const chosen = await db.table.findFirst({
+      where: { id: parsed.tableId, locationId: table.locationId, deletedAt: null },
+      select: { id: true },
+    });
+    if (chosen) seatedTableId = chosen.id;
   }
 
   const businessDate = businessDateFor(location.timezone);
@@ -152,7 +167,7 @@ export async function placeOrder(input: unknown) {
         businessDate,
         type: parsed.type,
         status: "PENDING",
-        tableId: parsed.type === "DINE_IN" ? table.id : null,
+        tableId: parsed.type === "DINE_IN" ? seatedTableId : null,
         customerName: parsed.customerName,
         customerPhone: parsed.customerPhone,
         customerEmail: parsed.customerEmail,

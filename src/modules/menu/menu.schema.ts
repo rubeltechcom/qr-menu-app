@@ -20,11 +20,36 @@ export const updateMenuSchema = createMenuSchema.partial().omit({ locationId: tr
 });
 export type UpdateMenuInput = z.infer<typeof updateMenuSchema>;
 
+/**
+ * An image reference we are willing to store.
+ *
+ * Uploaded photos are served same-origin under /api/uploads/..., which
+ * is a path rather than an absolute URL, so a plain z.url() would reject
+ * exactly the case this app produces. Absolute URLs are still accepted
+ * for an S3 or CDN install. Whether a given URL is actually *ours* is a
+ * separate question, answered by isOwnedImageUrl() at the point of use —
+ * this only rejects shapes that could never be an image, such as a
+ * `javascript:` or `data:` URL.
+ */
+const imageRef = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2048)
+  .refine(
+    (value) => value.startsWith("/") || /^https?:\/\//i.test(value),
+    "Must be an uploaded image or an https URL",
+  )
+  .refine((value) => !value.startsWith("//"), "Must not be protocol-relative");
+
 export const createCategorySchema = z.object({
   menuId: z.cuid(),
   name: z.string().trim().min(1, "Category name is required").max(120),
   description: z.string().trim().max(500).optional(),
-  imageUrl: z.url().optional(),
+  imageUrl: imageRef.optional(),
+  // One emoji. Capped generously rather than at one code unit, because a
+  // single emoji can be several — a skin tone or a ZWJ sequence.
+  icon: z.string().trim().max(16).optional(),
 });
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 
@@ -51,7 +76,9 @@ export const createMenuItemSchema = z.object({
   name: z.string().trim().min(1, "Item name is required").max(150),
   description: z.string().trim().max(1000).optional(),
   basePriceCents: z.number().int().min(0, "Price cannot be negative"),
-  images: z.array(z.url()).default([]),
+  // Capped at five: a dish card shows one, the detail sheet a handful,
+  // and an unbounded array is a way to fill a disk.
+  images: z.array(imageRef).max(5).default([]),
   allergens: z.array(z.string().trim().min(1)).default([]),
   dietaryTags: z.array(z.string().trim().min(1)).default([]),
   calories: z.number().int().min(0).optional(),

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { requireAuth } from "@/lib/require-auth";
-import { rawPrisma } from "@/server/db/client";
+import { findMembershipForUserBySlug } from "@/modules/tenants/membership.repository";
 import { runWithTenant, requireTenantContext } from "@/server/tenant-context";
 
 /**
@@ -18,10 +18,10 @@ import { runWithTenant, requireTenantContext } from "@/server/tenant-context";
 export async function requireDashboardTenant(tenantSlug: string) {
   const session = await requireAuth();
 
-  const membership = await rawPrisma.membership.findFirst({
-    where: { userId: session.user.id, tenant: { slug: tenantSlug, deletedAt: null } },
-    include: { tenant: true },
-  });
+  // Goes through the repository so the read runs with app.user_id set —
+  // the bootstrap RLS policy then enforces "your own membership" at the
+  // database, not just in this WHERE clause.
+  const membership = await findMembershipForUserBySlug(session.user.id, tenantSlug);
 
   if (!membership) {
     notFound();
@@ -48,5 +48,21 @@ export async function requireDashboardTenant(tenantSlug: string) {
     membership,
     tenant: membership.tenant,
     db,
+    /**
+     * Run a service call inside this tenant's context.
+     *
+     * Pages read through repositories with the `db` above and never need
+     * this. Server Actions do: the service layer calls
+     * requireTenantContext() to get its own scoped client, and by the
+     * time an action has awaited this function the store is long gone —
+     * so calling a service directly throws "No tenant context available".
+     *
+     * `fn` may be async: AsyncLocalStorage propagates through awaits
+     * *inside* the callback. What it cannot survive is being returned
+     * across React's render boundary, which is why pages take `db`
+     * instead (see the note on runWithTenant).
+     */
+    withTenant: <T>(fn: () => Promise<T>): Promise<T> =>
+      runWithTenant(membership.tenant.id, membership.tenant.slug, fn),
   };
 }

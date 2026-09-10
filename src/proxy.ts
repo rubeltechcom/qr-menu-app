@@ -46,6 +46,8 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Run on everything except static assets and Next.js internals.
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    // api/uploads is excluded too: it serves cached dish photos, and
+    // resolving a tenant for every image on a menu is pure overhead.
+    "/((?!_next/static|_next/image|api/uploads|favicon.ico).*)",
   ],
 };

@@ -67,11 +67,28 @@ const envSchema = z.object({
     .default(true),
 
   // --- Object storage (S3-compatible) ---
+  // Setting these switches uploads from local disk to S3. All of BUCKET,
+  // ACCESS_KEY_ID and SECRET_ACCESS_KEY are required together; ENDPOINT
+  // is omitted for real AWS and set for R2/MinIO.
   S3_ENDPOINT: optionalString(z.string().url()),
   S3_BUCKET: optionalString(z.string().min(1)),
   S3_ACCESS_KEY_ID: optionalString(z.string().min(1)),
   S3_SECRET_ACCESS_KEY: optionalString(z.string().min(1)),
   S3_PUBLIC_URL: optionalString(z.string().url()),
+
+  // --- Uploads (local filesystem driver) ---
+  // Where dish photos are written when S3 is not configured. Defaults to
+  // <cwd>/var/uploads. IN DOCKER THIS MUST POINT AT A MOUNTED VOLUME —
+  // anything inside the image is destroyed on every redeploy, taking the
+  // restaurant's photos with it. src/instrumentation.ts checks this at
+  // boot rather than letting it surface as a 500 on the first upload.
+  UPLOAD_DIR: optionalString(z.string().min(1)),
+  // Server-side hard cap in bytes. The client downscales well below this,
+  // so hitting it means something is wrong rather than merely large.
+  UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(8 * 1024 * 1024),
+  // Optional absolute prefix (a CDN) for locally-stored files. Unset
+  // means same-origin, which is what a single-server install wants.
+  UPLOAD_PUBLIC_BASE: optionalString(z.string().url()),
 
   // --- Email ---
   RESEND_API_KEY: optionalString(z.string().min(1)),
