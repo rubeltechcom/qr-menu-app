@@ -52,6 +52,17 @@ const eslintConfig = defineConfig([
       // Same shape for a diner's order-tracking token — see
       // resolveTenantByTrackToken() and the track_token_lookup policy.
       "src/modules/orders/order.repository.ts",
+      // Billing runs where no tenant scope exists: a Stripe webhook has
+      // no session at all, and the nightly reconciliation job runs
+      // headless. Every query in these two is narrowed to a single
+      // tenant id resolved from the verified event.
+      "src/modules/billing/billing.service.ts",
+      "src/modules/billing/connect.service.ts",
+      "src/app/api/webhooks/**",
+      // A diner returning from a provider, and a provider webhook, both
+      // arrive with no tenant — the payment id or track token IS what
+      // establishes it. See the bootstrap_payment_lookup policy.
+      "src/modules/payments/payment.repository.ts",
     ],
     rules: {
       // The @typescript-eslint variant, not the base rule — only it

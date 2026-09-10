@@ -49,11 +49,28 @@ model Tenant {
   id                 String       @id @default(cuid())
   slug               String       @unique
   name               String
+  // Plan and subscription state. Both are plain strings rather than
+  // enums so a webhook carrying a status Stripe added yesterday is
+  // recorded rather than rejected; PLANS + effectivePlan() in
+  // src/modules/billing/plans.ts decide what each value entitles.
   plan               String       @default("FREE")
   subscriptionStatus String       @default("TRIALING")
   stripeCustomerId   String?      @unique
   stripeSubscriptionId String?    @unique
   connectAccountId   String?      @unique
+  // Whether the Connect account has finished onboarding and may take
+  // payments — Stripe's charges_enabled, mirrored here so the checkout
+  // path does not have to call Stripe to find out.
+  connectChargesEnabled Boolean   @default(false)
+  trialEndsAt        DateTime?
+  currentPeriodEndsAt DateTime?
+  // Set when a payment fails; the 7-day grace period (PROMPT.md §9) is
+  // measured from here, and cleared as soon as a payment succeeds.
+  pastDueSince       DateTime?
+  // How this restaurant takes money from diners.
+  paymentMode        String       @default("COUNTER") // COUNTER | OPTIONAL | REQUIRED
+  payments           Payment[]
+  webhookEvents      WebhookEvent[]
   defaultLocale      String       @default("en")
   currency           String       @default("USD")
   featureFlags       Json         @default("{}")
@@ -403,6 +420,10 @@ model Order {
   subtotalCents    Int
   deliveryFeeCents Int @default(0)
   totalCents       Int
+  // Snapshotted from the location at order time, like the item prices
+  // above: if a restaurant later switches currency, last month's
+  // receipts must still read in the currency they were actually paid in.
+  currency         String @default("USD")
 
   rejectionReason String?
 
@@ -410,8 +431,14 @@ model Order {
   // account. Unguessable for the same reason a table's publicCode is.
   trackToken String @unique
 
-  items  OrderItem[]
-  events OrderEvent[]
+  // Denormalised from the order's payments so the board can colour a
+  // card "paid" without joining, and so an order with no payment row at
+  // all (counter service) still has an answer.
+  paymentStatus PaymentStatus @default(PENDING)
+
+  items    OrderItem[]
+  events   OrderEvent[]
+  payments Payment[]
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -487,4 +514,115 @@ model OrderCounter {
   @@unique([locationId, businessDate])
   @@index([tenantId])
   @@map("order_counters")
+}
+
+// ---------------------------------------------------------------------------
+// Payments (Phase 5)
+// ---------------------------------------------------------------------------
+
+enum PaymentProvider {
+  STRIPE
+  BKASH
+  // Cash or card at the counter — recorded so an order's payment state
+  // is answerable from one place regardless of how the money arrived.
+  COUNTER
+}
+
+enum PaymentStatus {
+  PENDING // created, awaiting the diner
+  AUTHORIZED // provider holds the funds, not yet captured
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+model Payment {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  provider PaymentProvider
+  status   PaymentStatus   @default(PENDING)
+
+  // Money in minor units, per PROMPT.md §4.
+  amountCents   Int
+  currency      String
+  // What the platform takes from this order (0 on paid plans).
+  platformFeeCents Int @default(0)
+  refundedCents Int @default(0)
+
+  /**
+   * The provider's own id for this payment — a Stripe PaymentIntent id,
+   * or a bKash paymentID. Unique so a webhook replay cannot create a
+   * second row for the same payment.
+   */
+  providerRef String? @unique
+  /** Provider-side id the diner is sent to, e.g. a bKash bkashURL token. */
+  providerSessionRef String?
+  /** Last error the provider reported, for support to read. Never card data. */
+  failureReason String?
+
+  refunds PaymentRefund[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  paidAt      DateTime?
+  failedAt    DateTime?
+
+  @@index([tenantId])
+  @@index([orderId])
+  @@map("payments")
+}
+
+model PaymentRefund {
+  id        String  @id @default(cuid())
+  tenantId  String
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  amountCents Int
+  reason      String?
+  /** Provider's refund id; unique so a replayed webhook is a no-op. */
+  providerRef String? @unique
+  actorUserId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([paymentId])
+  @@map("payment_refunds")
+}
+
+/**
+ * Webhook de-duplication (PROMPT.md §5.5: "processed idempotently via an
+ * event-ID dedupe table").
+ *
+ * Providers retry aggressively and will happily deliver the same event
+ * twice. Recording the id before acting on it is what stops a retry
+ * refunding an order a second time.
+ */
+model WebhookEvent {
+  id       String  @id @default(cuid())
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  provider PaymentProvider
+  /** The provider's event id — the dedupe key. */
+  eventId   String
+  eventType String
+  payload   Json
+
+  processedAt DateTime?
+  error       String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([provider, eventId])
+  @@index([tenantId])
+  @@map("webhook_events")
 }

@@ -47,6 +47,24 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: optionalString(z.string().min(1)),
   STRIPE_WEBHOOK_SECRET: optionalString(z.string().min(1)),
   STRIPE_CONNECT_CLIENT_ID: optionalString(z.string().min(1)),
+  // Price ids for the Smart and Pro plans. Optional so the app runs
+  // without billing configured; the checkout route reports the missing
+  // one by name rather than failing with a Stripe error.
+  STRIPE_PRICE_SMART_MONTHLY: optionalString(z.string().min(1)),
+  STRIPE_PRICE_SMART_YEARLY: optionalString(z.string().min(1)),
+  STRIPE_PRICE_PRO_MONTHLY: optionalString(z.string().min(1)),
+  STRIPE_PRICE_PRO_YEARLY: optionalString(z.string().min(1)),
+
+  // --- bKash (Tokenized Checkout) ---
+  BKASH_APP_KEY: optionalString(z.string().min(1)),
+  BKASH_APP_SECRET: optionalString(z.string().min(1)),
+  BKASH_USERNAME: optionalString(z.string().min(1)),
+  BKASH_PASSWORD: optionalString(z.string().min(1)),
+  // Defaults to sandbox: pointing at live money should be a deliberate
+  // act, never something a missing variable does for you.
+  BKASH_SANDBOX: z
+    .preprocess((value) => value !== "false", z.boolean())
+    .default(true),
 
   // --- Object storage (S3-compatible) ---
   S3_ENDPOINT: optionalString(z.string().url()),

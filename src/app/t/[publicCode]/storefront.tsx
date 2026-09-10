@@ -17,6 +17,7 @@ interface CategoryView {
 }
 
 type OrderType = "DINE_IN" | "TAKEAWAY" | "DELIVERY";
+export type PaymentMode = "COUNTER" | "OPTIONAL" | "REQUIRED";
 
 const TYPE_TABS: Array<{ value: OrderType; label: string }> = [
   { value: "DINE_IN", label: "Dine In" },
@@ -30,12 +31,16 @@ export function Storefront({
   locationName,
   currency,
   categories,
+  paymentMode,
+  providers,
 }: {
   publicCode: string;
   tableLabel: string;
   locationName: string;
   currency: string;
   categories: CategoryView[];
+  paymentMode: PaymentMode;
+  providers: Array<{ id: string; displayName: string }>;
 }) {
   const cart = useCart(publicCode);
   const [isSheetOpen, setSheetOpen] = useState(false);
@@ -46,7 +51,14 @@ export function Storefront({
   const money = useMemo(() => makeMoneyFormatter(currency), [currency]);
 
   if (placed) {
-    return <OrderPlaced orderNumber={placed.orderNumber} trackToken={placed.trackToken} />;
+    return (
+      <OrderPlaced
+        orderNumber={placed.orderNumber}
+        trackToken={placed.trackToken}
+        paymentMode={paymentMode}
+        providers={providers}
+      />
+    );
   }
 
   return (
@@ -407,10 +419,45 @@ function Field({
 function OrderPlaced({
   orderNumber,
   trackToken,
+  paymentMode,
+  providers,
 }: {
   orderNumber: number;
   trackToken: string;
+  paymentMode: PaymentMode;
+  providers: Array<{ id: string; displayName: string }>;
 }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const canPayOnline = paymentMode !== "COUNTER" && providers.length > 0;
+
+  const pay = async (provider: string) => {
+    setBusy(provider);
+    setError(null);
+    try {
+      const response = await fetch("/api/payments/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackToken, provider }),
+      });
+      const payload = (await response.json()) as { redirectUrl?: string; error?: string };
+
+      if (!response.ok || !payload.redirectUrl) {
+        setError(payload.error ?? "Could not start the payment.");
+        setBusy(null);
+        return;
+      }
+      // Full navigation, not a client-side route change: the provider's
+      // page has to own the tab so the diner can complete 3-D Secure or
+      // the bKash PIN step.
+      window.location.assign(payload.redirectUrl);
+    } catch {
+      setError("You appear to be offline. Check your connection and try again.");
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col items-center justify-center px-6 text-center">
       <p className="text-5xl">✓</p>
@@ -418,8 +465,38 @@ function OrderPlaced({
         Order #{orderNumber} sent to the kitchen
       </h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        We&apos;ll bring it over as soon as it&apos;s ready.
+        {paymentMode === "REQUIRED"
+          ? "Pay now to confirm your order."
+          : "We'll bring it over as soon as it's ready."}
       </p>
+
+      {canPayOnline && (
+        <div className="mt-6 flex w-full flex-col gap-2">
+          {providers.map((provider) => (
+            <button
+              key={provider.id}
+              type="button"
+              disabled={busy !== null}
+              onClick={() => void pay(provider.id)}
+              className="w-full rounded-full bg-green-600 py-3 font-semibold text-white disabled:opacity-50"
+            >
+              {busy === provider.id ? "Opening…" : `Pay with ${provider.displayName}`}
+            </button>
+          ))}
+          {paymentMode === "OPTIONAL" && (
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Or pay at the counter.
+            </p>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <p role="alert" className="mt-4 text-sm font-medium text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+
       <a
         href={`/order/${trackToken}`}
         className="mt-6 rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"

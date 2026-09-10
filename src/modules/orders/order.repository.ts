@@ -14,6 +14,9 @@ export const OPEN_STATUSES: OrderStatus[] = ["PENDING", "ACCEPTED"];
 const orderInclude = {
   items: { orderBy: { createdAt: "asc" } },
   table: { select: { id: true, label: true } },
+  // Newest first: an order that was refunded and re-paid should show
+  // its current payment, not the abandoned first attempt.
+  payments: { orderBy: { createdAt: "desc" } },
 } satisfies Prisma.OrderInclude;
 
 export type OrderWithItems = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;

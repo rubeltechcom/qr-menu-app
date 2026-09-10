@@ -4,7 +4,9 @@ import * as tableService from "@/modules/tables/table.service";
 import { runWithTenant, requireTenantContext } from "@/server/tenant-context";
 import * as menuRepo from "@/modules/menu/menu.repository";
 import * as locationRepo from "@/modules/locations/location.repository";
-import { Storefront } from "./storefront";
+import { Storefront, type PaymentMode } from "./storefront";
+import { availableProviders } from "@/modules/payments/registry";
+import { paymentModeOf } from "@/modules/payments/payment.service";
 
 /**
  * The QR landing page — what a diner sees the instant they scan a table.
@@ -45,6 +47,24 @@ export default async function TableLandingPage({
   const locations = await locationRepo.listLocations(db);
   const location = locations.find((candidate) => candidate.id === table.locationId);
 
+  // How this restaurant takes money, and which providers are actually
+  // configured — a button for a provider with no credentials would only
+  // fail on tap.
+  const tenant = await db.tenant.findFirst({
+    where: { id: table.tenantId },
+    select: { paymentMode: true },
+  });
+  const paymentMode: PaymentMode = paymentModeOf({
+    paymentMode: tenant?.paymentMode ?? "COUNTER",
+  });
+  const providers =
+    paymentMode === "COUNTER"
+      ? []
+      : availableProviders().map((provider) => ({
+          id: provider.id,
+          displayName: provider.displayName,
+        }));
+
   const menus = await menuRepo.listMenusForLocation(db, table.locationId);
   const menu = menus[0] ? await menuRepo.getMenuWithContent(db, menus[0].id) : null;
 
@@ -72,6 +92,8 @@ export default async function TableLandingPage({
       locationName={location?.name ?? ""}
       currency={location?.currency ?? "USD"}
       categories={categories}
+      paymentMode={paymentMode}
+      providers={providers}
     />
   );
 }

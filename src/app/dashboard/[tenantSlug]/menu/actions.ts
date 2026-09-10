@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
 import * as menuService from "@/modules/menu/menu.service";
 import * as locationService from "@/modules/locations/location.service";
+import { assertCanCreate } from "@/modules/billing/entitlements";
 
 /**
  * Every action re-establishes the tenant context via
@@ -15,7 +16,8 @@ import * as locationService from "@/modules/locations/location.service";
  */
 
 export async function createLocationAction(tenantSlug: string, formData: FormData) {
-  await requireDashboardTenant(tenantSlug);
+  const { db, tenant } = await requireDashboardTenant(tenantSlug);
+  await assertCanCreate(db, tenant, "locations");
   await locationService.createMyLocation({
     name: formData.get("name"),
     address: formData.get("address") || undefined,
@@ -48,7 +50,10 @@ export async function createMenuItemAction(
   categoryId: string,
   formData: FormData,
 ) {
-  await requireDashboardTenant(tenantSlug);
+  const { db, tenant } = await requireDashboardTenant(tenantSlug);
+  // Free includes 50 menu items; paid plans are unlimited.
+  await assertCanCreate(db, tenant, "menuItems");
+
   const priceDollars = Number(formData.get("price") ?? 0);
   await menuService.createMenuItem({
     categoryId,

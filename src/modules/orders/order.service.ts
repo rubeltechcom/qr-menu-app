@@ -125,7 +125,7 @@ export async function placeOrder(input: unknown) {
 
   const location = await db.location.findFirst({
     where: { id: table.locationId },
-    select: { id: true, timezone: true },
+    select: { id: true, timezone: true, currency: true },
   });
   if (!location) {
     throw new OrderError("That table is not set up for ordering.", "TABLE_NOT_FOUND");
@@ -162,6 +162,7 @@ export async function placeOrder(input: unknown) {
         subtotalCents,
         deliveryFeeCents,
         totalCents,
+        currency: location.currency,
         trackToken,
         items: {
           create: lines.map((line) => ({
@@ -179,7 +180,13 @@ export async function placeOrder(input: unknown) {
           create: { tenantId: table.tenantId, status: "PENDING" },
         },
       },
-      include: { items: true, table: { select: { id: true, label: true } } },
+      include: {
+        items: true,
+        table: { select: { id: true, label: true } },
+        // Always empty on a brand-new order, but included so the shape
+        // matches what serializeOrder expects everywhere else.
+        payments: true,
+      },
     });
 
     return created;
@@ -286,6 +293,20 @@ export function serializeOrder(order: repo.OrderWithItems) {
     subtotalCents: order.subtotalCents,
     totalCents: order.totalCents,
     rejectionReason: order.rejectionReason,
+    currency: order.currency,
+    paymentStatus: order.paymentStatus,
+    // The payment the board can act on — refund it, or see why it
+    // failed. Null for a counter-service order nobody has settled yet.
+    payment: order.payments[0]
+      ? {
+          id: order.payments[0].id,
+          provider: order.payments[0].provider,
+          status: order.payments[0].status,
+          amountCents: order.payments[0].amountCents,
+          refundedCents: order.payments[0].refundedCents,
+          failureReason: order.payments[0].failureReason,
+        }
+      : null,
     createdAt: order.createdAt.toISOString(),
     items: order.items.map((item) => ({
       id: item.id,

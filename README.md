@@ -135,6 +135,52 @@ authenticate differently, though, so they have their own endpoints
 (`/api/staff/realtime`, `/api/staff/orders`) that check the PIN session
 and take the tenant from it rather than from the query string.
 
+## Payments
+
+Two separate flows of money, in two separate modules, so a refund on
+someone's dinner can never touch a subscription:
+
+- **`src/modules/billing`** — the platform charging restaurants. Free /
+  Smart / Pro, with entitlements defined as *data* in `plans.ts`;
+  `can()`, `limitFor()` and `assertCanCreate()` are the only things that
+  read them, so adding a plan never means touching feature code.
+- **`src/modules/payments`** — diners paying restaurants, behind a
+  `PaymentProvider` interface with Stripe and bKash implementations.
+  Adding SSLCommerz or Razorpay means one new file plus a line in
+  `registry.ts`.
+
+**Prices are never taken from the request.** The cart posts item ids;
+every amount, modifier delta and platform fee is re-read server-side.
+
+**A redirect is not proof of payment.** Both the return page and the
+webhook funnel into one idempotent `recordOutcome()`, and a terminal
+state never moves again — so a late "expired" event cannot un-pay an
+order the diner already settled.
+
+**bKash differs from Stripe in two ways that shaped the interface:** it
+has no webhooks (its `execute` call on return is what captures the
+money, which is why the interface is redirect-first), and no
+marketplace split (so a platform fee cannot be taken inline, and is
+recorded as zero rather than pretended).
+
+Owners choose how they take money in **Settings → Payments**: counter
+only, online optional, or online required.
+
+### Configuration
+
+Payments are optional — the app runs without any of these, and simply
+does not offer online payment.
+
+| Variable | For |
+|---|---|
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Card payments and billing |
+| `STRIPE_PRICE_{SMART,PRO}_{MONTHLY,YEARLY}` | Subscription price ids |
+| `BKASH_APP_KEY`, `BKASH_APP_SECRET`, `BKASH_USERNAME`, `BKASH_PASSWORD` | bKash |
+| `BKASH_SANDBOX` | Defaults to `true`; set `false` deliberately for live money |
+
+Webhook endpoints: `/api/webhooks/stripe/billing` (subscriptions) and
+`/api/webhooks/stripe/orders` (diner payments).
+
 ## Build phases
 
 This project is built in the phases described in PROMPT.md §11

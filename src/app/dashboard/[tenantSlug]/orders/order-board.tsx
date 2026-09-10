@@ -10,6 +10,7 @@ import {
   readyOrderAction,
   rejectOrderAction,
 } from "./actions";
+import { markPaidAtCounterAction, refundOrderAction } from "./payment-actions";
 
 type TypeFilter = "ALL" | "DINE_IN" | "TAKEAWAY" | "DELIVERY";
 
@@ -254,6 +255,13 @@ function OrderCard({
         </dl>
       )}
 
+      <PaymentRow
+        order={order}
+        tenantSlug={tenantSlug}
+        currency={currency}
+        disabled={isPending}
+      />
+
       {order.status === "REJECTED" ? (
         <p className="mt-3 text-sm text-red-600 dark:text-red-400">
           Rejected{order.rejectionReason ? ` — ${order.rejectionReason}` : ""}
@@ -321,6 +329,104 @@ function OrderCard({
       )}
     </article>
   );
+}
+
+/**
+ * Payment state, and the two things staff can do about it: take cash at
+ * the counter, or send an online payment back.
+ */
+function PaymentRow({
+  order,
+  tenantSlug,
+  currency,
+  disabled,
+}: {
+  order: SerializedOrder;
+  tenantSlug: string;
+  currency: string;
+  disabled: boolean;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const payment = order.payment;
+  const busy = disabled || isPending;
+
+  const tone =
+    order.paymentStatus === "PAID"
+      ? "text-green-700 dark:text-green-400"
+      : order.paymentStatus === "FAILED"
+        ? "text-red-600 dark:text-red-400"
+        : order.paymentStatus === "REFUNDED" || order.paymentStatus === "PARTIALLY_REFUNDED"
+          ? "text-amber-700 dark:text-amber-400"
+          : "text-zinc-500 dark:text-zinc-400";
+
+  const label =
+    order.paymentStatus === "PAID"
+      ? `Paid${payment ? ` · ${providerLabel(payment.provider)}` : ""}`
+      : order.paymentStatus === "REFUNDED"
+        ? "Refunded"
+        : order.paymentStatus === "PARTIALLY_REFUNDED" && payment
+          ? `Partly refunded · ${formatMoney(payment.refundedCents, currency)}`
+          : order.paymentStatus === "FAILED"
+            ? `Payment failed${payment?.failureReason ? ` · ${payment.failureReason}` : ""}`
+            : "Unpaid";
+
+  const canRefund =
+    payment !== null &&
+    payment.provider !== "COUNTER" &&
+    (order.paymentStatus === "PAID" || order.paymentStatus === "PARTIALLY_REFUNDED");
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+      <span className={`text-sm font-medium ${tone}`}>{label}</span>
+
+      {order.paymentStatus !== "PAID" &&
+        order.paymentStatus !== "REFUNDED" &&
+        order.paymentStatus !== "PARTIALLY_REFUNDED" && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              startTransition(() => {
+                void markPaidAtCounterAction(tenantSlug, order.id);
+              })
+            }
+            className="text-xs font-medium text-zinc-600 underline underline-offset-2 disabled:opacity-50 dark:text-zinc-400"
+          >
+            Mark paid at counter
+          </button>
+        )}
+
+      {canRefund && payment && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            const remaining = payment.amountCents - payment.refundedCents;
+            if (
+              !confirm(
+                `Refund ${formatMoney(remaining, currency)} to the diner?
+
+This cannot be undone.`,
+              )
+            ) {
+              return;
+            }
+            const reason = prompt("Reason for the refund (optional)") ?? "";
+            startTransition(() => {
+              void refundOrderAction(tenantSlug, payment.id, reason);
+            });
+          }}
+          className="text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-50 dark:text-red-400"
+        >
+          Refund
+        </button>
+      )}
+    </div>
+  );
+}
+
+function providerLabel(provider: string): string {
+  return provider === "BKASH" ? "bKash" : provider === "COUNTER" ? "counter" : "card";
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

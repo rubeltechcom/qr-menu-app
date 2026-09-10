@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
 import * as tableService from "@/modules/tables/table.service";
 import * as locationService from "@/modules/locations/location.service";
+import { assertCanCreate } from "@/modules/billing/entitlements";
 
 /**
  * Every action re-establishes tenant context via requireDashboardTenant()
@@ -26,7 +27,10 @@ export async function createTableAction(
   locationId: string,
   formData: FormData,
 ) {
-  await requireDashboardTenant(tenantSlug);
+  const { db, tenant } = await requireDashboardTenant(tenantSlug);
+  // Checked server-side: a hidden button is not a permission check
+  // (PROMPT.md §5.5), and the Free plan caps tables at 10.
+  await assertCanCreate(db, tenant, "tables");
   const seats = formData.get("seats");
   await tableService.createMyTable({
     locationId,
@@ -41,11 +45,18 @@ export async function createTableRangeAction(
   locationId: string,
   formData: FormData,
 ) {
-  await requireDashboardTenant(tenantSlug);
+  const { db, tenant } = await requireDashboardTenant(tenantSlug);
+
+  const from = Number(formData.get("from"));
+  const to = Number(formData.get("to"));
+  // Checked for the whole range up front, so an owner on Free asking
+  // for 20 tables is told before 10 are created and 10 are not.
+  await assertCanCreate(db, tenant, "tables", Math.max(0, to - from + 1));
+
   await tableService.createMyTableRange({
     locationId,
-    from: Number(formData.get("from")),
-    to: Number(formData.get("to")),
+    from,
+    to,
     prefix: formData.get("prefix") ?? "",
   });
   revalidatePath(`/dashboard/${tenantSlug}/tables`);
