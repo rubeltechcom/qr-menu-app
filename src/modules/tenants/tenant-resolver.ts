@@ -30,8 +30,11 @@ export async function resolveTenantFromRequest(): Promise<{
   });
   if (domain) return domain.tenant;
 
-  // 2. Platform subdomain.
+  // 2. Platform subdomain — only where the install actually uses them.
+  // Unset means every restaurant is served from one hostname under
+  // /m/<slug>/t/<code>, so there is no subdomain to read here.
   const rootDomain = env.APP_DOMAIN;
+  if (!rootDomain) return null;
   if (hostname === rootDomain || !hostname.endsWith(`.${rootDomain}`)) {
     return null;
   }

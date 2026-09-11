@@ -18,5 +18,13 @@ export default async function SignUpPage({
   searchParams: Promise<{ plan?: string }>;
 }) {
   const { plan } = await searchParams;
-  return <SignUpForm plan={plan ?? null} appDomain={env.APP_DOMAIN} />;
+  return (
+    <SignUpForm
+      plan={plan ?? null}
+      appDomain={env.APP_DOMAIN}
+      // Hostname only: the owner is reading an address, not a link, and
+      // "https://" in front of a form field is noise.
+      menuUrlBase={new URL(env.APP_URL).host}
+    />
+  );
 }

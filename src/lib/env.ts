@@ -25,10 +25,20 @@ const envSchema = z.object({
 
   // --- App ---
   APP_URL: z.string().url().describe("Public base URL of the marketing site"),
-  APP_DOMAIN: z
-    .string()
-    .min(1)
-    .describe("Root domain used for tenant subdomain resolution, e.g. example.com"),
+  /**
+   * Root domain for per-restaurant subdomains (<slug>.example.com).
+   *
+   * Optional, and unset is a perfectly good production setup. It only
+   * works if DNS has a wildcard record AND the certificate covers it —
+   * a two-level wildcard like *.menu.example.com needs a paid
+   * certificate on most providers. Left unset, every restaurant is
+   * served from one hostname under /m/<slug>/t/<code>, which needs no
+   * DNS work per restaurant and is what the reference product does.
+   *
+   * Setting it to a domain that is not actually wildcarded is the worst
+   * of both: the app hands out links that no server answers.
+   */
+  APP_DOMAIN: optionalString(z.string().min(1)),
 
   // --- Database ---
   DATABASE_URL: z.string().url(),

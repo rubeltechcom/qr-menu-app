@@ -22,9 +22,16 @@ const initialState: SignUpFormState = {};
 export function SignUpForm({
   plan,
   appDomain,
+  menuUrlBase,
 }: {
   plan: string | null;
-  appDomain: string;
+  /**
+   * Set only where per-restaurant subdomains actually resolve, in which
+   * case the link is <slug>.<appDomain> and is shown as a suffix.
+   */
+  appDomain?: string;
+  /** Otherwise the link is <menuUrlBase>/<slug>, shown as a prefix. */
+  menuUrlBase: string;
 }) {
   const [state, formAction, pending] = useActionState(signUpAction, initialState);
 
@@ -164,6 +171,14 @@ export function SignUpForm({
                 : "border-zinc-300 focus-within:border-zinc-900"
             }`}
           >
+            {/* Where the menu lives. Shown as a prefix for a path URL
+                and a suffix for a subdomain, so either way the owner
+                reads their real address left to right. */}
+            {!appDomain && (
+              <span className="shrink-0 border-r border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-500">
+                {menuUrlBase}/m/
+              </span>
+            )}
             <input
               id="slug"
               name="slug"
@@ -178,9 +193,11 @@ export function SignUpForm({
               aria-invalid={state.fieldErrors?.slug ? true : undefined}
               className="min-w-0 flex-1 px-3.5 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400"
             />
-            <span className="shrink-0 border-l border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-500">
-              .{appDomain}
-            </span>
+            {appDomain && (
+              <span className="shrink-0 border-l border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-500">
+                .{appDomain}
+              </span>
+            )}
           </div>
           <p className="mt-1.5 text-xs text-zinc-500">
             {state.fieldErrors?.slug ? (

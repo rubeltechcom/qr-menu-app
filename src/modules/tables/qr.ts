@@ -19,18 +19,26 @@ export interface StorefrontUrlOptions {
  *
  * Preference order, best first:
  *
- *   1. the restaurant's own domain      menu.joespizza.com/t/AB12
- *   2. its subdomain on the platform    joespizza.example.com/t/AB12
- *   3. the bare platform URL            example.com/t/AB12
+ *   1. the restaurant's own domain   menu.joespizza.com/t/AB12
+ *   2. its subdomain on the platform joespizza.example.com/t/AB12
+ *   3. a branded path                example.com/m/joespizza/t/AB12
+ *   4. the bare platform URL         example.com/t/AB12
  *
- * The first two both read as the restaurant's own address, which is what
- * a printed QR code on a table should look like — a guest who reads the
- * URL under the code should see a name they recognise, not ours. The
- * third is the fallback for an install with no APP_DOMAIN configured.
+ * A printed QR code carries its URL in human-readable text underneath,
+ * and a guest reading it should see a name they recognise rather than
+ * ours. The first three all achieve that.
  *
- * All three resolve: the proxy matches a custom domain first, then a
- * platform subdomain (see tenant-resolver.ts), and /t/<code> works on
- * the bare domain too.
+ * The subdomain is skipped unless APP_DOMAIN is set, because it only
+ * works where DNS is actually wildcarded and the certificate covers it.
+ * Handing out <slug>.example.com when *.example.com does not resolve
+ * produces a link that fails before it even reaches the server — worse
+ * than a plain one, because a printed sticker cannot be edited.
+ *
+ * So the default is the branded path: one hostname, one certificate, no
+ * DNS work when a restaurant signs up, and the name still in the URL.
+ *
+ * Every form resolves. The proxy matches a custom domain first, then a
+ * platform subdomain; /m/<slug>/t/<code> and bare /t/<code> are routes.
  */
 export function tableStorefrontUrl(
   publicCode: string,
@@ -60,6 +68,10 @@ export function tableStorefrontUrl(
     } catch {
       // APP_URL is validated at boot, so this should be unreachable.
     }
+  }
+
+  if (options.tenantSlug) {
+    return `${base}/m/${options.tenantSlug}/t/${publicCode}`;
   }
 
   return `${base}/t/${publicCode}`;
