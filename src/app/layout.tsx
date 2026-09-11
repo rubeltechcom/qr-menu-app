@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker";
 
 const geistSans = Geist({
@@ -44,22 +43,19 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
+    // No theme provider. The app is light-only — the provider was
+    // configured with forcedTheme="light" and system detection off,
+    // there is not a single `dark:` class in the codebase, and the
+    // toggle was never rendered. All it did was inject a no-op script
+    // that React warns about. If dark mode is wanted later, it comes
+    // back together with the styles that would make it mean something.
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col" suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          forcedTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          {children}
-          <ServiceWorkerRegistration />
-        </ThemeProvider>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
