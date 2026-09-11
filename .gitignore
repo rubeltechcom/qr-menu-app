@@ -41,6 +41,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local scratch/debug scripts — never part of the app
+/scratch.js
+/scratch.*.js
+/scratch/
+
 # runtime-written data: uploaded dish photos (see UPLOAD_DIR in .env.example).
 # In production this lives on a mounted volume outside the app directory.
 /var/

@@ -19,6 +19,7 @@
     "db:seed:demo": "node prisma/seed-demo.mjs",
     "storage:sweep": "node scripts/sweep-uploads.mjs",
     "icons": "node scripts/generate-icons.mjs",
+    "superadmin": "node scripts/create-superadmin.mjs",
     "prepare": "prisma generate"
   },
   "dependencies": {

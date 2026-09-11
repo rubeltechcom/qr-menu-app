@@ -254,9 +254,11 @@ export function ImageUploader({
         // The formats the server accepts, so the picker cannot offer
         // something that is only going to be rejected.
         accept="image/jpeg,image/png,image/webp,image/avif"
-        // Hints that a phone should offer its camera alongside the
-        // library. Desktop browsers ignore it and show a file picker.
-        capture="environment"
+        // No `capture` attribute on purpose. It does NOT mean "offer the
+        // camera as well" — it forces the camera and removes the photo
+        // library entirely, which is the opposite of what an owner
+        // photographing a dish they already shot needs. Without it the
+        // phone shows its own sheet: Camera, Photo Library, or Files.
         className="sr-only"
         onChange={(event) => {
           handleFile(event.target.files?.[0]);
