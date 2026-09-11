@@ -8,7 +8,7 @@ export default function LandingSettingsPage() {
     <SettingsSurface
       heading="Landing page"
       description="The public marketing page: which demo it opens, and which live menus it shows off."
-      groupIds={["showcase"]}
+      groupIds={["landing", "showcase"]}
     />
   );
 }

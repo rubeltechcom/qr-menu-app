@@ -53,6 +53,120 @@ export const SETTING_GROUPS: SettingGroup[] = [
     ],
   },
   {
+    id: "landing",
+    title: "Landing page copy",
+    description:
+      "The words on the public home page. Leave a field blank to keep the " +
+      "built-in wording.",
+    settings: [
+      {
+        key: "landing.heroEyebrow",
+        label: "Badge above the headline",
+        kind: "text",
+        placeholder: "Free plan — no card required",
+      },
+      {
+        key: "landing.heroHeadline",
+        label: "Headline",
+        kind: "text",
+        placeholder: "Your menu, your QR code, your orders.",
+      },
+      {
+        key: "landing.heroSubheading",
+        label: "Paragraph under the headline",
+        kind: "multiline",
+        placeholder:
+          "Give every table a QR code. Guests browse your menu and order from " +
+          "their own phone…",
+      },
+      {
+        key: "landing.heroPrimaryCta",
+        label: "Main button",
+        kind: "text",
+        placeholder: "Create your free menu",
+      },
+      {
+        key: "landing.heroReassurance",
+        label: "Small print under the buttons",
+        kind: "text",
+        placeholder: "Set up in an evening · Unlimited orders · Cancel any time",
+      },
+      {
+        key: "landing.stepsHeading",
+        label: "How-it-works heading",
+        kind: "text",
+        placeholder: "Live in three steps",
+      },
+      {
+        key: "landing.stepsSubheading",
+        label: "How-it-works subheading",
+        kind: "multiline",
+        placeholder: "No hardware to buy, no installation…",
+      },
+      {
+        key: "landing.featuresHeading",
+        label: "Features heading",
+        kind: "text",
+        placeholder: "Everything the front of house needs",
+      },
+      {
+        key: "landing.featuresSubheading",
+        label: "Features subheading",
+        kind: "multiline",
+        placeholder: "Built around a real service…",
+      },
+      {
+        key: "landing.features",
+        label: "Feature list",
+        hint:
+          "One per line, as: Title | Description. Icons stay in their " +
+          "existing order. Blank keeps the built-in set.",
+        kind: "multiline",
+        placeholder: "A QR code for every table | Print a code per table…",
+      },
+      {
+        key: "landing.showcaseHeading",
+        label: "Example-menus heading",
+        kind: "text",
+        placeholder: "Menus already running on this platform",
+      },
+      {
+        key: "landing.faqHeading",
+        label: "FAQ heading",
+        kind: "text",
+        placeholder: "Questions, answered",
+      },
+      {
+        key: "landing.ctaHeading",
+        label: "Closing banner heading",
+        kind: "text",
+        placeholder: "Put a QR code on your tables tonight",
+      },
+      {
+        key: "landing.ctaSubheading",
+        label: "Closing banner text",
+        kind: "multiline",
+        placeholder: "Create your menu free. No card, no contract, no hardware.",
+      },
+      {
+        key: "landing.steps",
+        label: "How it works",
+        hint:
+          "One step per line, as: Title | Description. Blank keeps the three " +
+          "built-in steps.",
+        kind: "multiline",
+        placeholder: "Register & get your QR | Tell us your restaurant's name…",
+      },
+      {
+        key: "landing.faqs",
+        label: "Frequently asked questions",
+        hint: "One per line, as: Question | Answer. Blank keeps the built-in set.",
+        kind: "multiline",
+        placeholder: "Is the free plan really free? | Yes — no card required…",
+      },
+    ],
+  },
+  {
     id: "showcase",
     title: "Example menus",
     description:

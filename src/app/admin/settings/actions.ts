@@ -58,6 +58,15 @@ export async function saveSettingsAction(
     return { error: "Could not save those settings. Please try again." };
   }
 
+  // saveSettings refreshes the in-memory snapshot, but the rendered
+  // pages that read it are cached separately. Landing copy, prices and
+  // the demo link all live on the public pages, so an operator who
+  // saved a new headline and then looked at the home page would
+  // otherwise still see the old one and reasonably conclude it had not
+  // saved. Layout scope clears the marketing pages beneath it too.
   revalidatePath("/admin/settings");
+  revalidatePath("/admin/plans");
+  revalidatePath("/", "layout");
+
   return { ok: true, savedAt: Date.now() };
 }

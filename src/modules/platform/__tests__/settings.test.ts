@@ -10,6 +10,7 @@ import {
   saveSettings,
 } from "../settings.service";
 import { alertSettings } from "../alert-settings";
+import { landingCopy } from "../landing-content";
 
 /**
  * Platform settings, against the real database.
@@ -29,6 +30,11 @@ const TEST_KEYS = [
   "alerts.soundUrl",
   "alerts.repeatSeconds",
   "alerts.desktopNotifications",
+  "landing.heroHeadline",
+  "landing.steps",
+  "landing.faqs",
+  "landing.features",
+  "landing.ctaHeading",
 ];
 
 async function clear() {
@@ -204,5 +210,88 @@ describe("alert settings", () => {
 
     await saveSettings({ "alerts.soundUrl": "" }, "test@example.com");
     expect(alertSettings().soundUrl).toBe("/sounds/new-order.wav");
+  });
+});
+
+/**
+ * Landing page copy.
+ *
+ * The property that matters is that an operator who has never opened
+ * the admin panel still gets the wording the page shipped with — an
+ * empty settings table must never produce a blank home page.
+ */
+describe("landing copy", () => {
+  const defaults = {
+    steps: [{ title: "Built-in step", body: "Built-in body" }],
+    features: [{ title: "Built-in feature", body: "Built-in feature body" }],
+    faqs: [{ question: "Built-in question?", answer: "Built-in answer" }],
+  };
+
+  it("falls back to the shipped copy when nothing is set", () => {
+    const copy = landingCopy(defaults);
+    expect(copy.heroHeadline).toBe("Your menu, your QR code, your orders.");
+    expect(copy.steps).toEqual(defaults.steps);
+    expect(copy.faqs).toEqual(defaults.faqs);
+  });
+
+  it("uses the operator's headline once set", async () => {
+    await saveSettings(
+      { "landing.heroHeadline": "Order at your table" },
+      "test@example.com",
+    );
+    expect(landingCopy(defaults).heroHeadline).toBe("Order at your table");
+  });
+
+  it("parses steps as Title | Body, one per line", async () => {
+    const steps = ["Scan | Point your camera", "Order | Tap what you want"].join("\n");
+    await saveSettings({ "landing.steps": steps }, "test@example.com");
+
+    expect(landingCopy(defaults).steps).toEqual([
+      { title: "Scan", body: "Point your camera" },
+      { title: "Order", body: "Tap what you want" },
+    ]);
+  });
+
+  it("keeps a pipe that appears inside the answer", async () => {
+    await saveSettings(
+      { "landing.faqs": "Cost? | Free | then $20/mo" },
+      "test@example.com",
+    );
+
+    expect(landingCopy(defaults).faqs).toEqual([
+      { question: "Cost?", answer: "Free | then $20/mo" },
+    ]);
+  });
+
+  it("ignores blank lines rather than rendering empty rows", async () => {
+    const steps = ["One | First", "", "   ", "Two | Second"].join("\n");
+    await saveSettings({ "landing.steps": steps }, "test@example.com");
+
+    expect(landingCopy(defaults).steps).toHaveLength(2);
+  });
+
+  it("returns to the shipped copy when a field is cleared", async () => {
+    await saveSettings({ "landing.steps": "Only | One" }, "test@example.com");
+    expect(landingCopy(defaults).steps).toHaveLength(1);
+
+    await saveSettings({ "landing.steps": "" }, "test@example.com");
+    expect(landingCopy(defaults).steps).toEqual(defaults.steps);
+  });
+  it("caps the feature list at the number of icons the page can draw", async () => {
+    // More entries than icons would render blank tiles, so extras are
+    // dropped rather than shown without an icon.
+    const many = ["A | one", "B | two", "C | three"].join("\n");
+    await saveSettings({ "landing.features": many }, "test@example.com");
+
+    expect(landingCopy(defaults).features).toHaveLength(defaults.features.length);
+  });
+
+  it("keeps every heading editable independently", async () => {
+    await saveSettings({ "landing.ctaHeading": "Start tonight" }, "test@example.com");
+
+    const copy = landingCopy(defaults);
+    expect(copy.ctaHeading).toBe("Start tonight");
+    // Untouched headings keep their shipped wording.
+    expect(copy.faqHeading).toBe("Questions, answered");
   });
 });

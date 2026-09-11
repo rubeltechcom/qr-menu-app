@@ -29,6 +29,19 @@ type Snapshot = Map<string, string>;
 
 let snapshot: Snapshot = new Map();
 let loaded = false;
+let loadedAt = 0;
+
+/**
+ * How long a process trusts its snapshot before re-reading.
+ *
+ * A save refreshes the snapshot in the process that handled it, which
+ * is the whole story on a single-container deployment. Run a second
+ * instance, though, and it would keep serving the old value until it
+ * restarted — a stale price or headline with no way to clear it short
+ * of a redeploy. A minute is short enough that nobody notices the lag
+ * and long enough that this is one query a minute, not one per render.
+ */
+const SNAPSHOT_TTL_MS = 60_000;
 
 /** Maps a setting key to the environment variable it falls back to. */
 function envFallback(definition: SettingDefinition): string | undefined {
@@ -60,6 +73,7 @@ export async function loadSettings(): Promise<void> {
 
     snapshot = next;
     loaded = true;
+    loadedAt = Date.now();
   } catch (error) {
     console.warn(
       "[settings] could not load platform settings; falling back to environment",
@@ -68,9 +82,15 @@ export async function loadSettings(): Promise<void> {
   }
 }
 
-/** True once the database has been read at least once. */
+/**
+ * True when the snapshot is present and still fresh.
+ *
+ * Callers guard with `if (!settingsLoaded()) await loadSettings()`, so
+ * returning false once the TTL expires is what makes a long-running
+ * process pick up a change made by another instance.
+ */
 export function settingsLoaded(): boolean {
-  return loaded;
+  return loaded && Date.now() - loadedAt < SNAPSHOT_TTL_MS;
 }
 
 /**

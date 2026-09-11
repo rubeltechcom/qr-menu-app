@@ -10,6 +10,7 @@ import {
   Truck,
 } from "lucide-react";
 import { Pricing } from "@/components/marketing/pricing";
+import { landingCopy } from "@/modules/platform/landing-content";
 import { pricingProps } from "@/modules/platform/pricing-props";
 import {
   getSetting,
@@ -158,6 +159,9 @@ export default async function HomePage() {
   const demoCode = getSetting("platform.demoTableCode")?.trim();
   const showcase = parseShowcase(getSetting("showcase.menus"));
 
+  // Operator overrides, falling back to the copy below.
+  const copy = landingCopy({ steps: STEPS, features: FEATURES, faqs: FAQS });
+
   return (
     <>
       {/* Hero */}
@@ -165,18 +169,15 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-2 lg:py-28">
           <div>
             <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
-              Free plan — no card required
+              {copy.heroEyebrow}
             </span>
 
             <h1 className="mt-5 text-4xl leading-[1.1] font-bold tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
-              Your menu, your QR code, your orders.
+              {copy.heroHeadline}
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-zinc-600">
-              Give every table a QR code. Guests browse your menu and order from their own
-              phone — dine-in, takeaway or delivery — and the order lands straight on your
-              kitchen screen. Update a price from your phone and every table sees it
-              instantly.
+              {copy.heroSubheading}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -184,7 +185,7 @@ export default async function HomePage() {
                 href="/signup"
                 className="rounded-full bg-zinc-900 px-7 py-3.5 text-base font-semibold text-white transition-colors hover:bg-zinc-700"
               >
-                Create your free menu
+                {copy.heroPrimaryCta}
               </Link>
               {/* Hidden rather than pointing at a table that does not
                   exist — a dead "See a live demo" is worse than none. */}
@@ -198,9 +199,7 @@ export default async function HomePage() {
               )}
             </div>
 
-            <p className="mt-4 text-sm text-zinc-500">
-              Set up in an evening · Unlimited orders · Cancel any time
-            </p>
+            <p className="mt-4 text-sm text-zinc-500">{copy.heroReassurance}</p>
           </div>
 
           {/* A phone showing the storefront, drawn rather than screenshotted
@@ -285,15 +284,15 @@ export default async function HomePage() {
       <section id="how" className="mx-auto max-w-6xl px-6 py-20">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Live in three steps
+            {copy.stepsHeading}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-600">
-            No hardware to buy, no installation, and nothing for your guests to download.
+            {copy.stepsSubheading}
           </p>
         </div>
 
         <ol className="mt-14 grid gap-10 md:grid-cols-3">
-          {STEPS.map((step, index) => (
+          {copy.steps.map((step, index) => (
             <li key={step.title} className="relative">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-900 text-lg font-bold text-white">
                 {index + 1}
@@ -310,26 +309,31 @@ export default async function HomePage() {
         <div className="mx-auto max-w-6xl px-6 py-20">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-              Everything the front of house needs
+              {copy.featuresHeading}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-600">
-              Built around a real service: a phone at the table, a screen in the kitchen,
-              and nothing in between that can go wrong.
+              {copy.featuresSubheading}
             </p>
           </div>
 
           <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((feature) => (
-              <div key={feature.title}>
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200">
-                  <feature.icon className="h-5 w-5" />
+            {copy.features.map((feature, index) => {
+              // Icons stay bound to position, so retitling a feature in
+              // the admin panel keeps its icon rather than requiring the
+              // operator to name one.
+              const Icon = FEATURES[index]?.icon ?? QrCode;
+              return (
+                <div key={feature.title}>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-4 font-semibold text-zinc-900">{feature.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+                    {feature.body}
+                  </p>
                 </div>
-                <h3 className="mt-4 font-semibold text-zinc-900">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                  {feature.body}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -342,7 +346,7 @@ export default async function HomePage() {
         <section className="mx-auto max-w-6xl px-6 py-20">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-              Menus already running on this platform
+              {copy.showcaseHeading}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-600">
               Open any of them to see exactly what your guests would see. These are live
@@ -382,11 +386,11 @@ export default async function HomePage() {
       <section className="border-t border-zinc-200 bg-zinc-50">
         <div className="mx-auto max-w-3xl px-6 py-20">
           <h2 className="text-center text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Questions, answered
+            {copy.faqHeading}
           </h2>
 
           <dl className="mt-12 flex flex-col gap-8">
-            {FAQS.map((faq) => (
+            {copy.faqs.map((faq) => (
               <div key={faq.question}>
                 <dt className="font-semibold text-zinc-900">{faq.question}</dt>
                 <dd className="mt-2 leading-relaxed text-zinc-600">{faq.answer}</dd>
@@ -400,11 +404,9 @@ export default async function HomePage() {
       <section className="bg-zinc-900">
         <div className="mx-auto max-w-3xl px-6 py-20 text-center">
           <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Put a QR code on your tables tonight
+            {copy.ctaHeading}
           </h2>
-          <p className="mt-4 text-lg text-zinc-300">
-            Create your menu free. No card, no contract, no hardware.
-          </p>
+          <p className="mt-4 text-lg text-zinc-300">{copy.ctaSubheading}</p>
           <Link
             href="/signup"
             className="mt-8 inline-block rounded-full bg-white px-8 py-4 text-base font-semibold text-zinc-900 transition-colors hover:bg-zinc-100"
