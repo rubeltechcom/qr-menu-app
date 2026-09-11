@@ -36,52 +36,42 @@ export default async function DashboardRootLayout({
   const match = /^\/dashboard\/([^/]+)/.exec(pathname);
   const slug = match?.[1];
 
-  const isActive = (href: string) =>
-    href === `/dashboard/${slug}` ? pathname === href : pathname.startsWith(href);
-
   const navItems = slug
     ? [
         {
           label: "Overview",
           href: `/dashboard/${slug}`,
           icon: LayoutDashboard,
-          active: isActive(`/dashboard/${slug}`),
         },
         {
           label: "Menu",
           href: `/dashboard/${slug}/menu`,
           icon: UtensilsCrossed,
-          active: isActive(`/dashboard/${slug}/menu`),
         },
         {
           label: "Orders",
           href: `/dashboard/${slug}/orders`,
           icon: ReceiptText,
-          active: isActive(`/dashboard/${slug}/orders`),
         },
         {
           label: "Tables",
           href: `/dashboard/${slug}/tables`,
           icon: QrCode,
-          active: isActive(`/dashboard/${slug}/tables`),
         },
         {
           label: "Payments",
           href: `/dashboard/${slug}/payments`,
           icon: CreditCard,
-          active: isActive(`/dashboard/${slug}/payments`),
         },
         {
           label: "Billing",
           href: `/dashboard/${slug}/billing`,
           icon: Receipt,
-          active: isActive(`/dashboard/${slug}/billing`),
         },
         {
           label: "Settings",
           href: `/dashboard/${slug}/settings`,
           icon: SlidersHorizontal,
-          active: isActive(`/dashboard/${slug}/settings`),
         },
       ]
     : [
@@ -89,7 +79,6 @@ export default async function DashboardRootLayout({
           label: "My Restaurants",
           href: "/dashboard",
           icon: LayoutDashboard,
-          active: true,
         },
       ];
 

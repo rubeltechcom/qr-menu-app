@@ -15,7 +15,6 @@ export default async function PlatformAdminLayout({
       label: "Platform Overview",
       href: "/admin",
       icon: Shield,
-      active: true,
     },
     {
       label: "Settings",

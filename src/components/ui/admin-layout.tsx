@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Store, LogOut, ChevronLeft } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -28,6 +31,8 @@ export function AdminLayout({
   onLogoutAction,
   backLink,
 }: AdminLayoutProps) {
+  const pathname = usePathname() ?? "";
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-zinc-50 md:flex-row">
       {/* Sidebar.
@@ -52,12 +57,15 @@ export function AdminLayout({
           <div className="flex flex-col gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const isRootHref = item.href === "/admin" || /^\/dashboard\/[^/]+$/.test(item.href);
+              const isActive = item.active ?? (isRootHref ? pathname === item.href : pathname.startsWith(item.href));
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    item.active
+                    isActive
                       ? "bg-zinc-100 text-zinc-900"
                       : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                   }`}
