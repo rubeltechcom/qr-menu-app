@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local throwaway debug scripts. Gitignored, so CI never sees them,
+    // but they should not fail a developer's own lint run either.
+    "scratch.js",
+    "scratch.*.js",
+    "scratch/**",
+    // Runtime-written uploads.
+    "var/**",
   ]),
   {
     // Enforce the tenancy isolation boundary from PROMPT.md §3.1: feature

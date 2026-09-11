@@ -29,7 +29,7 @@ export default async function DashboardPage() {
             <div className="flex-1">
               <h3 className="font-medium text-blue-900">You are a Platform Administrator</h3>
               <p className="mt-1 text-sm text-blue-700">
-                You don't have any individual restaurants assigned to you, but as a Platform Admin, you can manage the entire system.
+                You don&rsquo;t have any individual restaurants assigned to you, but as a Platform Admin, you can manage the entire system.
               </p>
               <div className="mt-4">
                 <Link
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
             <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-12">
               <Store className="h-8 w-8 text-zinc-400" />
               <p className="mt-4 text-sm font-medium text-zinc-900">No restaurants found</p>
-              <p className="mt-1 text-sm text-zinc-500">You haven't been added to any restaurants yet.</p>
+              <p className="mt-1 text-sm text-zinc-500">You haven&rsquo;t been added to any restaurants yet.</p>
             </div>
           )}
         </div>

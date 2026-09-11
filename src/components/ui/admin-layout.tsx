@@ -1,15 +1,5 @@
 import Link from "next/link";
-import {
-  LayoutDashboard,
-  Store,
-  MenuSquare,
-  Users,
-  Settings,
-  Shield,
-  CreditCard,
-  LogOut,
-  ChevronLeft
-} from "lucide-react";
+import { Store, LogOut, ChevronLeft } from "lucide-react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;

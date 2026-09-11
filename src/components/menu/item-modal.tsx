@@ -76,6 +76,10 @@ export function ItemModal({ item, money, onClose, onAdd, onFly, emoji, quantity 
         {/* Top Image & Actions */}
         <div className="relative aspect-[4/3] w-full bg-zinc-50 shrink-0">
           {item.images[0] ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- uploads may
+               live on a bucket whose host is unknown at build time, so
+               next/image's remotePatterns cannot cover them. See the note in
+               src/modules/storage/. */
             <img ref={heroRef} src={item.images[0]} alt={item.name} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center text-zinc-400 text-6xl">🍽️</div>

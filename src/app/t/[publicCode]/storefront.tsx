@@ -449,9 +449,14 @@ export function Storefront({
                   onClick={() => setSelectedItem(item)}
                 >
                   {item.images && item.images[0] ? (
-                    <img 
-                      src={item.images[0]} 
-                      alt={item.name} 
+                    /* eslint-disable-next-line @next/next/no-img-element -- uploads
+                       may live on a bucket whose host is unknown at build time, so
+                       next/image's remotePatterns cannot cover them. Photos are
+                       already downscaled on upload and served immutable. */
+                    <img
+                      src={item.images[0]}
+                      alt={item.name}
+                      loading="lazy"
                       className="h-full w-full object-cover drop-shadow-md"
                     />
                   ) : (

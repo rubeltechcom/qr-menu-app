@@ -15,7 +15,8 @@ import { restoreTenantAction, suspendTenantAction } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function PlatformAdminPage() {
-  const { user } = await requireSuperadmin();
+  // The guard, not a value: this is what makes the page superadmin-only.
+  await requireSuperadmin();
   const { tenants, totalTenants, byPlan, pastDue, trialing } = await platformTotals();
 
   return (
