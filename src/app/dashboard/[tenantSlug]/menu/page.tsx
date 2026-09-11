@@ -138,11 +138,21 @@ async function MenuSection({
               <Link
                 href={`/dashboard/${tenantSlug}/menu?category=${category.id}`}
                 scroll={false}
-                className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl transition-all ${
+                className={`flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl text-3xl transition-all ${
                   isActive ? "bg-yellow-400 shadow-md" : "bg-zinc-100 hover:bg-zinc-200"
                 }`}
               >
-                {iconFor(category)}
+                {category.imageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element -- uploads
+                     may live on a bucket whose host is unknown at build time. */
+                  <img
+                    src={category.imageUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  iconFor(category)
+                )}
               </Link>
               <div className="flex items-center gap-1.5">
                 <span
@@ -215,6 +225,7 @@ async function MenuSection({
                       description: item.description,
                       basePriceCents: item.basePriceCents,
                       images: item.images,
+                      videoUrl: item.videoUrl,
                       dietaryTags: item.dietaryTags,
                     }}
                   />

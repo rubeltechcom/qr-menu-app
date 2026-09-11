@@ -84,6 +84,8 @@ export default async function TableLandingPage({
       // Null when the owner has not chosen one; the storefront then
       // guesses from the name, so older menus are unaffected.
       icon: category.icon,
+      // An uploaded icon image, which takes precedence over the emoji.
+      iconUrl: category.imageUrl,
       items: category.items
         .filter((item) => item.isAvailable)
         .map((item) => ({
@@ -92,6 +94,7 @@ export default async function TableLandingPage({
           description: item.description,
           basePriceCents: item.basePriceCents,
           images: item.images,
+          videoUrl: item.videoUrl,
           dietaryTags: item.dietaryTags,
         })),
     }))

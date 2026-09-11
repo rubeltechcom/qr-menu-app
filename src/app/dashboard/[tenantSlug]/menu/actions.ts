@@ -57,6 +57,8 @@ export async function createCategoryAction(
       menuId,
       name: formData.get("name"),
       icon: formData.get("icon") || undefined,
+      // Empty string means "cleared", which differs from absent.
+      imageUrl: (formData.get("imageUrl") as string) || null,
     }),
   );
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
@@ -72,6 +74,8 @@ export async function updateCategoryAction(
     menuService.updateCategory(categoryId, {
       name: formData.get("name"),
       icon: formData.get("icon") || undefined,
+      // Empty string means "cleared", which differs from absent.
+      imageUrl: (formData.get("imageUrl") as string) || null,
     }),
   );
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
@@ -107,6 +111,21 @@ function tagList(value: FormDataEntryValue | null): string[] {
   ];
 }
 
+/**
+ * The gallery's image URLs, newline-separated.
+ *
+ * A newline is safe as a delimiter because a URL can never contain one,
+ * unlike a comma. Order is preserved: the first entry is the cover photo
+ * the menu grid shows.
+ */
+function urlList(value: FormDataEntryValue | null): string[] {
+  if (typeof value !== "string" || !value.trim()) return [];
+  return value
+    .split("\n")
+    .map((url) => url.trim())
+    .filter(Boolean);
+}
+
 export async function createMenuItemAction(
   tenantSlug: string,
   categoryId: string,
@@ -115,7 +134,7 @@ export async function createMenuItemAction(
   const { db, tenant, withTenant } = await requireDashboardTenant(tenantSlug);
   await assertCanCreate(db, tenant, "menuItems");
 
-  const image = formData.get("image");
+  const videoUrl = formData.get("videoUrl");
 
   await withTenant(() =>
     menuService.createMenuItem({
@@ -123,7 +142,8 @@ export async function createMenuItemAction(
       name: formData.get("name"),
       description: formData.get("description") || undefined,
       basePriceCents: priceToCents(formData.get("price")),
-      images: typeof image === "string" && image ? [image] : [],
+      images: urlList(formData.get("images")),
+      videoUrl: typeof videoUrl === "string" && videoUrl ? videoUrl : undefined,
       dietaryTags: tagList(formData.get("dietaryTags")),
     }),
   );
@@ -137,16 +157,18 @@ export async function updateMenuItemAction(
 ) {
   const { withTenant } = await requireDashboardTenant(tenantSlug);
 
-  const image = formData.get("image");
+  const videoUrl = formData.get("videoUrl");
 
-  // The service checks that any image URL is this tenant's own upload,
-  // and deletes the file this save replaces.
+  // The service checks that every URL is this tenant's own upload, and
+  // deletes the files this save removes.
   await withTenant(() =>
     menuService.updateMenuItem(itemId, {
       name: formData.get("name"),
       description: formData.get("description") || undefined,
       basePriceCents: priceToCents(formData.get("price")),
-      images: typeof image === "string" && image ? [image] : [],
+      images: urlList(formData.get("images")),
+      // Empty string means "cleared", which is different from absent.
+      videoUrl: typeof videoUrl === "string" && videoUrl ? videoUrl : null,
       dietaryTags: tagList(formData.get("dietaryTags")),
     }),
   );

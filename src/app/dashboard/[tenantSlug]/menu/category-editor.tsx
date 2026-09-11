@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { ImagePlus, Loader2, Plus, Trash2, X } from "lucide-react";
+import { useMediaUpload } from "@/lib/use-media-upload";
 import {
   createCategoryAction,
   deleteCategoryAction,
@@ -89,7 +90,7 @@ export function EditCategoryButton({
   category,
 }: {
   tenantSlug: string;
-  category: { id: string; name: string; icon: string | null };
+  category: { id: string; name: string; icon: string | null; imageUrl: string | null };
 }) {
   const [isOpen, setOpen] = useState(false);
 
@@ -127,6 +128,93 @@ export function EditCategoryButton({
   );
 }
 
+/**
+ * A category's own icon image, as an alternative to an emoji.
+ *
+ * Square and small — it renders at 64px in the storefront's category
+ * strip — so a logo or a product shot both work.
+ */
+function CategoryImagePicker({
+  value,
+  onChange,
+  tenantSlug,
+}: {
+  value: string | null;
+  onChange: (url: string | null) => void;
+  tenantSlug: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { state, upload, isUploading } = useMediaUpload({
+    tenantSlug,
+    kind: "category",
+    onUploaded: ({ url }) => onChange(url),
+  });
+
+  const shown = state.preview ?? value;
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-zinc-200 bg-zinc-50">
+        {shown ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element -- uploads
+                may live on a bucket whose host is unknown at build time. */}
+            <img src={shown} alt="" className="h-full w-full object-cover" />
+            {isUploading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-zinc-300">
+            <ImagePlus className="h-6 w-6" />
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={isUploading}
+          className="w-fit rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50"
+        >
+          {value ? "Replace image" : "Upload an image"}
+        </button>
+
+        {value && !isUploading && (
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="w-fit text-xs font-medium text-red-600 hover:underline"
+          >
+            Remove, use an emoji instead
+          </button>
+        )}
+
+        {state.message && (
+          <p role="alert" className="text-xs font-medium text-red-600">
+            {state.message}
+          </p>
+        )}
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif"
+        className="sr-only"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void upload(file);
+          event.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
 function CategorySheet({
   tenantSlug,
   menuId,
@@ -135,16 +223,18 @@ function CategorySheet({
 }: {
   tenantSlug: string;
   menuId?: string;
-  category?: { id: string; name: string; icon: string | null };
+  category?: { id: string; name: string; icon: string | null; imageUrl: string | null };
   onClose: () => void;
 }) {
   const [icon, setIcon] = useState(category?.icon ?? "");
+  const [imageUrl, setImageUrl] = useState<string | null>(category?.imageUrl ?? null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const submit = (formData: FormData) => {
     setError(null);
     formData.set("icon", icon);
+    formData.set("imageUrl", imageUrl ?? "");
 
     startTransition(async () => {
       try {
@@ -211,27 +301,45 @@ function CategorySheet({
           <div>
             <span className="text-sm font-medium text-zinc-800">Icon</span>
             <p className="mt-0.5 text-xs text-zinc-500">
-              Shown to guests above the category name. Leave it blank and we pick one to
-              match the name.
+              Shown to guests above the category name. Upload your own, pick an emoji, or
+              leave it blank and we choose one to match the name.
             </p>
 
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {SUGGESTED_ICONS.map((candidate) => (
-                <button
-                  key={candidate}
-                  type="button"
-                  onClick={() => setIcon(candidate === icon ? "" : candidate)}
-                  aria-pressed={icon === candidate}
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl text-2xl transition-colors ${
-                    icon === candidate
-                      ? "bg-yellow-400 ring-2 ring-zinc-900"
-                      : "bg-zinc-100 hover:bg-zinc-200"
-                  }`}
-                >
-                  {candidate}
-                </button>
-              ))}
+            {/* Your own image first: it is what a business with real
+                branding actually wants, and the emoji list below is the
+                quick option rather than the only one. */}
+            <div className="mt-3">
+              <CategoryImagePicker
+                value={imageUrl}
+                onChange={(url) => {
+                  setImageUrl(url);
+                  // An uploaded icon wins over an emoji, so clear the
+                  // emoji rather than leaving two competing choices set.
+                  if (url) setIcon("");
+                }}
+                tenantSlug={tenantSlug}
+              />
             </div>
+
+            {!imageUrl && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {SUGGESTED_ICONS.map((candidate) => (
+                  <button
+                    key={candidate}
+                    type="button"
+                    onClick={() => setIcon(candidate === icon ? "" : candidate)}
+                    aria-pressed={icon === candidate}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl text-2xl transition-colors ${
+                      icon === candidate
+                        ? "bg-yellow-400 ring-2 ring-zinc-900"
+                        : "bg-zinc-100 hover:bg-zinc-200"
+                    }`}
+                  >
+                    {candidate}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {error && (

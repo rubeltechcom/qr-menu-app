@@ -139,4 +139,83 @@ describe("menu service", () => {
     );
     expect(item.images).toHaveLength(1);
   });
+
+  it("keeps several photos in the order they were given", async () => {
+    // Order is meaningful: the first photo is the one the menu grid
+    // shows, and the editor promotes a chosen photo to the front.
+    const urls = ["a", "b", "c"].map(
+      (name) => `/api/uploads/t/${tenantId}/menuItem/2026/09/${name}111.jpg`,
+    );
+
+    const item = await asAction(() =>
+      menuService.createMenuItem({
+        categoryId,
+        name: "Gallery dish",
+        basePriceCents: 500,
+        images: urls,
+      }),
+    );
+    expect(item.images).toEqual(urls);
+  });
+
+  it("refuses more than five photos", async () => {
+    const urls = Array.from(
+      { length: 6 },
+      (_, i) => `/api/uploads/t/${tenantId}/menuItem/2026/09/many${i}.jpg`,
+    );
+
+    await expect(
+      asAction(() =>
+        menuService.createMenuItem({
+          categoryId,
+          name: "Too many",
+          basePriceCents: 500,
+          images: urls,
+        }),
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("stores a video alongside the photos", async () => {
+    const item = await asAction(() =>
+      menuService.createMenuItem({
+        categoryId,
+        name: "With a clip",
+        basePriceCents: 500,
+        images: [`/api/uploads/t/${tenantId}/menuItem/2026/09/still1.jpg`],
+        videoUrl: `/api/uploads/t/${tenantId}/menuItem/2026/09/clip123.mp4`,
+      }),
+    );
+    expect(item.videoUrl).toContain("clip123.mp4");
+  });
+
+  it("checks the video's ownership, not just the photos'", async () => {
+    // A video is another URL written to a row. Leaving it unchecked
+    // would be a hole in the same wall the images go through.
+    await expect(
+      asAction(() =>
+        menuService.createMenuItem({
+          categoryId,
+          name: "Borrowed clip",
+          basePriceCents: 500,
+          videoUrl: "/api/uploads/t/clxsomeoneelse/menuItem/2026/09/clip.mp4",
+        }),
+      ),
+    ).rejects.toThrow(/isn't one of your uploads/i);
+  });
+
+  it("stores an uploaded icon image on a category", async () => {
+    const iconUrl = `/api/uploads/t/${tenantId}/category/2026/09/icon123.png`;
+
+    const created = await asAction(() =>
+      menuService.createCategory({ menuId, name: "Groceries", imageUrl: iconUrl }),
+    );
+    expect(created.imageUrl).toBe(iconUrl);
+
+    // Clearing it falls back to the emoji or the name-derived default.
+    const cleared = await asAction(() =>
+      menuService.updateCategory(created.id, { name: "Groceries", imageUrl: null }),
+    );
+    expect(cleared.imageUrl).toBeNull();
+  });
 });

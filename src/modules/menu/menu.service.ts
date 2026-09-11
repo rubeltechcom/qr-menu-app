@@ -130,25 +130,46 @@ export async function reorderCategories(input: unknown) {
 export async function createMenuItem(input: unknown) {
   const { db, tenantId } = requireTenantContext();
   const parsed = createMenuItemSchema.parse(input);
-  assertOwnedImages(parsed.images, tenantId);
+  // The video goes through the same ownership check as the photos: it
+  // is another URL written to a row, and an unchecked one would let a
+  // menu point at anything.
+  assertOwnedImages(
+    [...parsed.images, ...(parsed.videoUrl ? [parsed.videoUrl] : [])],
+    tenantId,
+  );
   return repo.createMenuItem(db, tenantId, parsed);
 }
 
 export async function updateMenuItem(id: string, input: unknown) {
   const { db, tenantId } = requireTenantContext();
   const parsed = updateMenuItemSchema.parse(input);
-  assertOwnedImages(parsed.images, tenantId);
+  assertOwnedImages(
+    [...(parsed.images ?? []), ...(parsed.videoUrl ? [parsed.videoUrl] : [])],
+    tenantId,
+  );
 
-  // Photos the owner removed in this save are deleted from storage
+  // Media the owner removed in this save is deleted from storage
   // afterwards; see discardRemovedImages on why this is best-effort.
-  const previous =
-    parsed.images !== undefined
-      ? await db.menuItem.findFirst({ where: { id }, select: { images: true } })
-      : null;
+  const touchesMedia = parsed.images !== undefined || parsed.videoUrl !== undefined;
+  const previous = touchesMedia
+    ? await db.menuItem.findFirst({
+        where: { id },
+        select: { images: true, videoUrl: true },
+      })
+    : null;
 
   const updated = await repo.updateMenuItem(db, id, parsed);
 
-  if (previous) discardRemovedImages(previous.images, parsed.images ?? [], tenantId);
+  if (previous) {
+    discardRemovedImages(previous.images, parsed.images ?? [], tenantId);
+    if (previous.videoUrl) {
+      discardRemovedImages(
+        [previous.videoUrl],
+        parsed.videoUrl ? [parsed.videoUrl] : [],
+        tenantId,
+      );
+    }
+  }
   return updated;
 }
 

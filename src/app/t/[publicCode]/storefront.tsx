@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCart } from "./use-cart";
+import { useFavourites } from "./use-favourites";
 
 interface MenuItemView {
   id: string;
@@ -9,6 +10,8 @@ interface MenuItemView {
   description: string | null;
   basePriceCents: number;
   images: string[];
+  /** A short clip, shown ahead of the photos in the detail sheet. */
+  videoUrl?: string | null;
   dietaryTags: string[];
 }
 
@@ -17,6 +20,8 @@ interface CategoryView {
   name: string;
   /** Chosen by the restaurant; null falls back to guessing from the name. */
   icon?: string | null;
+  /** An uploaded icon image, which wins over the emoji when set. */
+  iconUrl?: string | null;
   items: MenuItemView[];
 }
 
@@ -27,8 +32,9 @@ import { ItemModal } from "@/components/menu/item-modal";
 import { DELIVERY_FEE_CENTS } from "@/modules/orders/order.schema";
 import { Plus, Minus } from "lucide-react";
 
-/** Reserved id for the cross-category "Popular" tab — not a real row. */
+/** Reserved ids for the cross-category tabs — neither is a real row. */
 const POPULAR_ID = "__popular__";
+const FAVOURITES_ID = "__favourites__";
 
 /**
  * Stacking order of the storefront's floating surfaces, lowest first:
@@ -131,6 +137,11 @@ export function Storefront({
   providers: Array<{ id: string; displayName: string }>;
 }) {
   const cart = useCart(publicCode);
+  const {
+    isFavourite,
+    toggle: toggleFavourite,
+    count: favouriteCount,
+  } = useFavourites(publicCode);
   const { clear: clearCart } = cart;
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [placed, setPlaced] = useState<{
@@ -167,9 +178,29 @@ export function Storefront({
     };
   }, [categories]);
 
+  /**
+   * The dishes this diner has hearted, as a tab of their own.
+   *
+   * Only appears once there is something in it: an empty "Favourites"
+   * tab on a first visit is a dead end, and it would push the real
+   * categories off the edge of a phone screen.
+   */
+  const favouritesCategory = useMemo<CategoryView | null>(() => {
+    if (favouriteCount === 0) return null;
+    const all = categories.flatMap((category) => category.items);
+    const items = all.filter((item) => isFavourite(item.id));
+    return items.length > 0
+      ? { id: FAVOURITES_ID, name: "Favourites", icon: "❤️", items }
+      : null;
+  }, [categories, favouriteCount, isFavourite]);
+
   const navCategories = useMemo(
-    () => [popularCategory, ...categories],
-    [popularCategory, categories],
+    () => [
+      popularCategory,
+      ...(favouritesCategory ? [favouritesCategory] : []),
+      ...categories,
+    ],
+    [popularCategory, favouritesCategory, categories],
   );
 
   /**
@@ -207,7 +238,13 @@ export function Storefront({
   // it shows no pills at all. "Popular" itself is a promotion marker
   // rather than something a diner filters by, so it is never a pill.
   const categoryTags = useMemo(() => {
-    if (!currentCategory || currentCategory.id === POPULAR_ID) return [];
+    if (
+      !currentCategory ||
+      currentCategory.id === POPULAR_ID ||
+      currentCategory.id === FAVOURITES_ID
+    ) {
+      return [];
+    }
     const tags = new Set<string>();
     currentCategory.items.forEach((i) =>
       i.dietaryTags.forEach((t) => {
@@ -410,13 +447,24 @@ export function Storefront({
                   className="group flex shrink-0 flex-col items-center gap-2"
                 >
                   <div
-                    className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl transition-all ${
+                    className={`flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl text-3xl transition-all ${
                       isActive
                         ? "bg-yellow-400 text-zinc-900 shadow-md"
                         : "bg-transparent text-zinc-600 hover:bg-zinc-100"
                     }`}
                   >
-                    {categoryEmoji(category)}
+                    {category.iconUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element -- uploads
+                         may live on a bucket whose host is unknown at build time. */
+                      <img
+                        src={category.iconUrl}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      categoryEmoji(category)
+                    )}
                   </div>
                   <span
                     className={`text-sm font-medium lowercase ${isActive ? "text-zinc-900" : "text-zinc-600"}`}
@@ -476,14 +524,30 @@ export function Storefront({
                   </span>
                 )}
 
-                {/* Heart button */}
+                {/* Favourite. Filled when hearted, so the state is
+                    obvious at a glance rather than only on hover. */}
                 <button
-                  className="absolute top-3 right-3 z-10 rounded-full bg-white/80 p-1.5 text-zinc-400 backdrop-blur hover:text-red-500"
-                  onClick={(e) => e.stopPropagation()}
+                  type="button"
+                  aria-pressed={isFavourite(item.id)}
+                  aria-label={
+                    isFavourite(item.id)
+                      ? `Remove ${item.name} from favourites`
+                      : `Add ${item.name} to favourites`
+                  }
+                  onClick={(event) => {
+                    // The card itself opens the detail sheet.
+                    event.stopPropagation();
+                    toggleFavourite(item.id);
+                  }}
+                  className={`absolute top-3 right-3 z-10 rounded-full bg-white/80 p-1.5 backdrop-blur transition-colors ${
+                    isFavourite(item.id)
+                      ? "text-red-500"
+                      : "text-zinc-400 hover:text-red-500"
+                  }`}
                 >
                   <svg
-                    className="h-4 w-4"
-                    fill="none"
+                    className="h-4 w-4 transition-transform active:scale-90"
+                    fill={isFavourite(item.id) ? "currentColor" : "none"}
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -565,6 +629,8 @@ export function Storefront({
           onFly={flyToCart}
           emoji={emojiForItem(selectedItem.id)}
           quantity={quantityInCart(selectedItem.id)}
+          isFavourite={isFavourite(selectedItem.id)}
+          onToggleFavourite={() => toggleFavourite(selectedItem.id)}
         />
       )}
 

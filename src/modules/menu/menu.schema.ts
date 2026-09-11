@@ -49,7 +49,9 @@ export const createCategorySchema = z.object({
   menuId: z.cuid(),
   name: z.string().trim().min(1, "Category name is required").max(120),
   description: z.string().trim().max(500).optional(),
-  imageUrl: imageRef.optional(),
+  // Nullable, so a save can clear an uploaded icon and fall back to
+  // the emoji or the name-derived default.
+  imageUrl: imageRef.nullish(),
   // One emoji. Capped generously rather than at one code unit, because a
   // single emoji can be several — a skin tone or a ZWJ sequence.
   icon: z.string().trim().max(16).optional(),
@@ -85,6 +87,9 @@ export const createMenuItemSchema = z.object({
   // Capped at five: a dish card shows one, the detail sheet a handful,
   // and an unbounded array is a way to fill a disk.
   images: z.array(imageRef).max(5).default([]),
+  // One short clip, shown ahead of the photos. Nullable rather than
+  // merely optional so a save can clear an existing one.
+  videoUrl: imageRef.nullish(),
   allergens: z.array(z.string().trim().min(1)).default([]),
   dietaryTags: z.array(z.string().trim().min(1)).default([]),
   calories: z.number().int().min(0).optional(),

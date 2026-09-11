@@ -10,6 +10,7 @@ interface ItemModalProps {
     description: string | null;
     basePriceCents: number;
     images: string[];
+    videoUrl?: string | null;
     dietaryTags: string[];
   };
   money: (cents: number) => string;
@@ -25,6 +26,9 @@ interface ItemModalProps {
    * importantly when an order is placed and the cart empties.
    */
   quantity: number;
+  /** Whether this dish is hearted. Owned by the storefront, not here. */
+  isFavourite?: boolean;
+  onToggleFavourite?: () => void;
 }
 
 export function ItemModal({
@@ -35,6 +39,8 @@ export function ItemModal({
   onFly,
   emoji,
   quantity,
+  isFavourite = false,
+  onToggleFavourite,
 }: ItemModalProps) {
   const heroRef = useRef<HTMLImageElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -81,22 +87,57 @@ export function ItemModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Image & Actions */}
+        {/* Top media & actions.
+            The video leads when there is one — it is the thing a guest
+            will actually watch — and the photos follow. Swiped rather
+            than tapped through: this is a phone held in one hand. */}
         <div className="relative aspect-[4/3] w-full shrink-0 bg-zinc-50">
-          {item.images[0] ? (
-            /* eslint-disable-next-line @next/next/no-img-element -- uploads may
-               live on a bucket whose host is unknown at build time, so
-               next/image's remotePatterns cannot cover them. See the note in
-               src/modules/storage/. */
-            <img
-              ref={heroRef}
-              src={item.images[0]}
-              alt={item.name}
-              className="h-full w-full object-cover"
-            />
+          {item.videoUrl || item.images.length > 0 ? (
+            <div className="scrollbar-hide flex h-full w-full snap-x snap-mandatory overflow-x-auto">
+              {item.videoUrl && (
+                <video
+                  src={item.videoUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="h-full w-full shrink-0 snap-center bg-black object-contain"
+                />
+              )}
+
+              {item.images.map((url, index) => (
+                /* eslint-disable-next-line @next/next/no-img-element -- uploads may
+                   live on a bucket whose host is unknown at build time, so
+                   next/image's remotePatterns cannot cover them. See the note in
+                   src/modules/storage/. */
+                <img
+                  key={url}
+                  // The fly-to-cart animation clones the first photo, so
+                  // only that one needs the ref.
+                  ref={index === 0 ? heroRef : undefined}
+                  src={url}
+                  alt={item.name}
+                  className="h-full w-full shrink-0 snap-center object-cover"
+                />
+              ))}
+            </div>
           ) : (
             <div className="flex h-full items-center justify-center text-6xl text-zinc-400">
               🍽️
+            </div>
+          )}
+
+          {/* How many there are to swipe through. Only worth showing
+              when there is actually more than one. */}
+          {(item.videoUrl ? 1 : 0) + item.images.length > 1 && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center gap-1.5">
+              {Array.from({
+                length: (item.videoUrl ? 1 : 0) + item.images.length,
+              }).map((_, index) => (
+                <span
+                  key={index}
+                  className="h-1.5 w-1.5 rounded-full bg-white/70 shadow"
+                />
+              ))}
             </div>
           )}
 
@@ -119,10 +160,18 @@ export function ItemModal({
             </svg>
           </button>
 
-          <button className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-zinc-400 shadow-sm backdrop-blur hover:text-red-500">
+          <button
+            type="button"
+            aria-pressed={isFavourite}
+            aria-label={isFavourite ? "Remove from favourites" : "Add to favourites"}
+            onClick={onToggleFavourite}
+            className={`absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-sm backdrop-blur transition-colors ${
+              isFavourite ? "text-red-500" : "text-zinc-400 hover:text-red-500"
+            }`}
+          >
             <svg
-              className="h-5 w-5"
-              fill="none"
+              className="h-5 w-5 transition-transform active:scale-90"
+              fill={isFavourite ? "currentColor" : "none"}
               stroke="currentColor"
               viewBox="0 0 24 24"
             >

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Plus, X } from "lucide-react";
-import { ImageUploader } from "@/components/menu/image-uploader";
+import { MediaGallery } from "@/components/menu/media-gallery";
 import { createMenuItemAction, updateMenuItemAction } from "./actions";
 
 export interface DishDraft {
@@ -11,6 +11,7 @@ export interface DishDraft {
   description: string | null;
   basePriceCents: number;
   images: string[];
+  videoUrl: string | null;
   dietaryTags: string[];
 }
 
@@ -81,15 +82,18 @@ function DishSheet({
   dish?: DishDraft;
   onClose: () => void;
 }) {
-  const [image, setImage] = useState<string | null>(dish?.images[0] ?? null);
+  const [images, setImages] = useState<string[]>(dish?.images ?? []);
+  const [videoUrl, setVideoUrl] = useState<string | null>(dish?.videoUrl ?? null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const submit = (formData: FormData) => {
     setError(null);
-    // The uploader holds the photo outside the form, so it is attached
-    // here rather than through a hidden input that could go stale.
-    formData.set("image", image ?? "");
+    // The gallery holds the media outside the form, so it is attached
+    // here rather than through hidden inputs that could go stale.
+    // Newline-separated because a URL can never contain one.
+    formData.set("images", images.join("\n"));
+    formData.set("videoUrl", videoUrl ?? "");
 
     startTransition(async () => {
       try {
@@ -133,15 +137,15 @@ function DishSheet({
         </div>
 
         <form action={submit} className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
-          <div className="flex gap-5">
-            <ImageUploader
-              value={image}
-              onChange={setImage}
-              tenantSlug={tenantSlug}
-              kind="menuItem"
-              className="w-36 shrink-0"
-            />
+          <MediaGallery
+            images={images}
+            videoUrl={videoUrl}
+            onImagesChange={setImages}
+            onVideoChange={setVideoUrl}
+            tenantSlug={tenantSlug}
+          />
 
+          <div className="flex gap-5">
             <div className="flex flex-1 flex-col gap-4">
               <div>
                 <label htmlFor="name" className="text-sm font-medium text-zinc-800">
