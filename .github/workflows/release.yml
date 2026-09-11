@@ -1,0 +1,150 @@
+name: Release
+
+# Cuts a version, tags it, and publishes a GitHub release — automatically,
+# from what was merged.
+#
+# Runs only after CI has passed on main, so a release can never point at
+# a commit that does not build. Nothing here deploys: Coolify watches the
+# branch and does that itself.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+# One release at a time. Two overlapping runs would race on the version
+# bump commit and one would be rejected.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Only on a green CI run. `workflow_run` fires on failure too.
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: the changelog is built from the commits since
+          # the previous tag, and a shallow clone has no previous tag.
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Work out the next version
+        id: version
+        run: |
+          set -euo pipefail
+
+          current=$(node -p "require('./package.json').version")
+          previous=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$previous" ]; then
+            range="HEAD"
+            echo "No previous tag; treating every commit as new."
+          else
+            range="${previous}..HEAD"
+          fi
+
+          # Conventional-ish: a commit body or subject saying BREAKING
+          # bumps major, "feat" bumps minor, anything else is a patch.
+          # Deliberately lenient — the aim is a sensible number without
+          # imposing a commit format on every message.
+          if git log "$range" --format="%B" | grep -qiE "^BREAKING CHANGE|!:"; then
+            bump=major
+          elif git log "$range" --format="%s" | grep -qiE "^(feat|feature)(\(.+\))?:"; then
+            bump=minor
+          else
+            bump=patch
+          fi
+
+          IFS=. read -r major minor patch <<< "$current"
+          case "$bump" in
+            major) next="$((major + 1)).0.0" ;;
+            minor) next="${major}.$((minor + 1)).0" ;;
+            patch) next="${major}.${minor}.$((patch + 1))" ;;
+          esac
+
+          echo "bump=$bump"        >> "$GITHUB_OUTPUT"
+          echo "version=$next"     >> "$GITHUB_OUTPUT"
+          echo "previous=$previous" >> "$GITHUB_OUTPUT"
+          echo "Releasing $current -> $next ($bump)"
+
+      - name: Check whether anything is worth releasing
+        id: changed
+        run: |
+          set -euo pipefail
+          previous="${{ steps.version.outputs.previous }}"
+
+          if [ -z "$previous" ]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Ignore the release workflow's own version-bump commits, or
+          # every release would trigger another one.
+          count=$(git log "${previous}..HEAD" --format="%s" \
+            | grep -cvE "^chore\(release\):" || true)
+
+          if [ "$count" -eq 0 ]; then
+            echo "Nothing new since ${previous}."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the changelog
+        if: steps.changed.outputs.release == 'true'
+        id: changelog
+        run: |
+          set -euo pipefail
+          previous="${{ steps.version.outputs.previous }}"
+          range=${previous:+${previous}..HEAD}
+
+          {
+            echo "notes<<CHANGELOG_EOF"
+            git log ${range:-HEAD} \
+              --no-merges \
+              --format="- %s (%h)" \
+              --invert-grep --grep="^chore(release):"
+            echo ""
+            if [ -n "$previous" ]; then
+              echo "**Full diff:** https://github.com/${{ github.repository }}/compare/${previous}...v${{ steps.version.outputs.version }}"
+            fi
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Bump package.json and tag
+        if: steps.changed.outputs.release == 'true'
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          npm version "$version" --no-git-tag-version
+
+          git add package.json package-lock.json
+          git commit -m "chore(release): v${version}"
+          git tag -a "v${version}" -m "v${version}"
+
+          git push origin main --follow-tags
+
+      - name: Publish the GitHub release
+        if: steps.changed.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            --title "v${{ steps.version.outputs.version }}" \
+            --notes "${{ steps.changelog.outputs.notes }}"

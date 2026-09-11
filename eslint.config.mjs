@@ -87,6 +87,9 @@ const eslintConfig = defineConfig([
       // the staff_login_lookup migration.
       "src/modules/auth/staff-login.repository.ts",
       "src/modules/auth/staff-pin.service.ts",
+      // The health check proves the database connection works at all.
+      // It reads no rows and touches no tenant data — `SELECT 1`.
+      "src/app/api/health/route.ts",
     ],
     rules: {
       // The @typescript-eslint variant, not the base rule — only it

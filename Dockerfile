@@ -61,14 +61,31 @@ ENV HOSTNAME=0.0.0.0
 ENV UPLOAD_DIR=/data/uploads
 RUN mkdir -p /data/uploads && chown -R node:node /data
 
+# The version this image was built from, surfaced in the deploy log and
+# by the health endpoint so a running container can be identified.
+ARG APP_VERSION=0.0.0
+ENV APP_VERSION=${APP_VERSION}
+
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
-# Kept so `npx prisma migrate deploy` can be run against this image.
 COPY --from=builder --chown=node:node /app/prisma ./prisma
+
+# The Prisma CLI and its engines, which the standalone output prunes —
+# it ships the client, not the tooling. Needed because migrations are
+# applied by the entrypoint on every start, so a deploy is one action
+# rather than a deploy plus a remembered terminal command.
+COPY --from=builder --chown=node:node /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=node:node /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=node:node /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+COPY --chown=node:node docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 USER node
 VOLUME ["/data/uploads"]
 EXPOSE 3000
 
+# Migrations run first; the server only starts if they succeed.
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]

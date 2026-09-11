@@ -1,6 +1,6 @@
 import { requireSuperadmin } from "@/lib/require-superadmin";
 import { AdminLayout } from "@/components/ui/admin-layout";
-import { Shield, SlidersHorizontal } from "lucide-react";
+import { Shield, SlidersHorizontal, Stethoscope } from "lucide-react";
 import { signOut } from "@/lib/auth";
 
 export default async function PlatformAdminLayout({
@@ -21,6 +21,11 @@ export default async function PlatformAdminLayout({
       label: "Settings",
       href: "/admin/settings",
       icon: SlidersHorizontal,
+    },
+    {
+      label: "Diagnostics",
+      href: "/admin/diagnostics",
+      icon: Stethoscope,
     },
   ];
 

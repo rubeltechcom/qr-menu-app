@@ -64,9 +64,10 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      # Runs before the build: a failing test should stop the pipeline
+      # in seconds rather than after a full Next build.
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
-
-      # Unit/integration tests and the tenant-isolation suite are added
-      # in Phase 1 alongside the test runner (Vitest) — this job is
-      # already wired to run them via `npm test` once that lands.

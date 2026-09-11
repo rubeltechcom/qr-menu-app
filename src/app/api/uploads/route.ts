@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { env } from "@/lib/env";
 import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
 import { checkUploadRateLimit } from "@/modules/storage/rate-limit";
 import {
@@ -45,8 +46,12 @@ export async function POST(request: NextRequest) {
   // Server Actions get an origin check from the framework; route
   // handlers do not, so a cross-site form POST would otherwise ride the
   // user's session cookie straight into this endpoint.
-  const origin = request.headers.get("origin");
-  if (origin && origin !== request.nextUrl.origin) {
+  //
+  // Compared against the host the BROWSER reached, not request.nextUrl:
+  // behind a reverse proxy (Coolify, nginx, Cloudflare) nextUrl is
+  // rebuilt from the internal request and reads http://localhost:3000,
+  // which never matches the real origin and rejected every upload.
+  if (!isSameOrigin(request)) {
     return Response.json(
       { error: "Cross-origin uploads are not allowed." },
       { status: 403 },
@@ -138,6 +143,47 @@ export async function POST(request: NextRequest) {
     console.error("[uploads] unexpected failure", error);
     return Response.json({ error: "We couldn't save that image." }, { status: 500 });
   }
+}
+
+/**
+ * Whether this request came from a page on our own site.
+ *
+ * The Origin header is set by the browser on every cross-site POST and
+ * cannot be forged by page JavaScript, which is what makes it a usable
+ * CSRF signal. What it is compared against matters: behind a reverse
+ * proxy the server sees an internal URL, so the public host comes from
+ * the proxy's forwarded headers, falling back to Host.
+ *
+ * A request with no Origin at all is allowed: some browsers omit it on
+ * same-origin requests, and the authentication check still applies.
+ */
+function isSameOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
+  let originHost: string;
+  try {
+    originHost = new URL(origin).host;
+  } catch {
+    return false; // unparseable Origin is not a same-origin request
+  }
+
+  // Set by the proxy that terminated TLS; x-forwarded-host may carry a
+  // comma-separated chain, in which case the first entry is the client's.
+  const forwarded = request.headers.get("x-forwarded-host");
+  const publicHost = (forwarded?.split(",")[0] ?? request.headers.get("host"))?.trim();
+
+  if (publicHost && originHost === publicHost) return true;
+
+  // Last resort: the configured public URL. Covers a proxy that strips
+  // the forwarded headers entirely.
+  try {
+    if (originHost === new URL(env.APP_URL).host) return true;
+  } catch {
+    // APP_URL is validated at boot, so this should be unreachable.
+  }
+
+  return false;
 }
 
 /**
