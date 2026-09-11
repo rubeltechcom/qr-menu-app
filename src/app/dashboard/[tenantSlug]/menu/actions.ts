@@ -46,7 +46,11 @@ export async function createMenuAction(tenantSlug: string, formData: FormData) {
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }
 
-export async function createCategoryAction(tenantSlug: string, menuId: string, formData: FormData) {
+export async function createCategoryAction(
+  tenantSlug: string,
+  menuId: string,
+  formData: FormData,
+) {
   const { withTenant } = await requireDashboardTenant(tenantSlug);
   await withTenant(() =>
     menuService.createCategory({
@@ -93,7 +97,14 @@ function priceToCents(value: FormDataEntryValue | null): number {
 /** A comma-separated tag field, normalised and de-duplicated. */
 function tagList(value: FormDataEntryValue | null): string[] {
   if (typeof value !== "string" || !value.trim()) return [];
-  return [...new Set(value.split(",").map((tag) => tag.trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      value
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 export async function createMenuItemAction(

@@ -133,10 +133,16 @@ export function Storefront({
   const cart = useCart(publicCode);
   const { clear: clearCart } = cart;
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const [placed, setPlaced] = useState<{ orderNumber: number; trackToken: string } | null>(null);
+  const [placed, setPlaced] = useState<{
+    orderNumber: number;
+    trackToken: string;
+  } | null>(null);
   // The most recent order from this device, kept so the menu can offer a
   // way back to its tracking page after the sheet closes.
-  const [activeOrder, setActiveOrder] = useState<{ orderNumber: number; trackToken: string } | null>(null);
+  const [activeOrder, setActiveOrder] = useState<{
+    orderNumber: number;
+    trackToken: string;
+  } | null>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItemView | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>(POPULAR_ID);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -156,7 +162,8 @@ export function Storefront({
     return {
       id: POPULAR_ID,
       name: "Popular",
-      items: tagged.length > 0 ? [...tagged, ...all.filter((i) => !tagged.includes(i))] : all,
+      items:
+        tagged.length > 0 ? [...tagged, ...all.filter((i) => !tagged.includes(i))] : all,
     };
   }, [categories]);
 
@@ -181,14 +188,18 @@ export function Storefront({
   const money = useMemo(() => {
     return (cents: number) => {
       const val = (cents / 100).toFixed(2);
-      return currency === 'GBP' ? `${val} £` : currency === 'USD' ? `$${val}` : `${val} ${currency}`;
+      return currency === "GBP"
+        ? `${val} £`
+        : currency === "USD"
+          ? `$${val}`
+          : `${val} ${currency}`;
     };
   }, [currency]);
 
   // Current category
   const currentCategory = useMemo(
-    () => navCategories.find(c => c.id === activeCategory) ?? navCategories[0],
-    [navCategories, activeCategory]
+    () => navCategories.find((c) => c.id === activeCategory) ?? navCategories[0],
+    [navCategories, activeCategory],
   );
 
   // Sub-category pills for the ACTIVE category only. Popular spans every
@@ -198,8 +209,10 @@ export function Storefront({
   const categoryTags = useMemo(() => {
     if (!currentCategory || currentCategory.id === POPULAR_ID) return [];
     const tags = new Set<string>();
-    currentCategory.items.forEach(i =>
-      i.dietaryTags.forEach(t => { if (t !== "Popular") tags.add(t); })
+    currentCategory.items.forEach((i) =>
+      i.dietaryTags.forEach((t) => {
+        if (t !== "Popular") tags.add(t);
+      }),
     );
     return tags.size > 0 ? ["All", ...Array.from(tags)] : [];
   }, [currentCategory]);
@@ -208,7 +221,9 @@ export function Storefront({
   const filteredItems = useMemo(() => {
     if (!currentCategory) return [];
     if (activeFilter === "All") return currentCategory.items;
-    return currentCategory.items.filter(item => item.dietaryTags.includes(activeFilter));
+    return currentCategory.items.filter((item) =>
+      item.dietaryTags.includes(activeFilter),
+    );
   }, [currentCategory, activeFilter]);
 
   // Reset tag filter when switching categories
@@ -239,8 +254,12 @@ export function Storefront({
     document.body.appendChild(ghost);
 
     const target = document.getElementById("cart-bar")?.getBoundingClientRect();
-    const dx = (target ? target.left + target.width / 2 : window.innerWidth / 2) - (from.left + from.width / 2);
-    const dy = (target ? target.top + target.height / 2 : window.innerHeight) - (from.top + from.height / 2);
+    const dx =
+      (target ? target.left + target.width / 2 : window.innerWidth / 2) -
+      (from.left + from.width / 2);
+    const dy =
+      (target ? target.top + target.height / 2 : window.innerHeight) -
+      (from.top + from.height / 2);
 
     requestAnimationFrame(() => {
       ghost.style.transform = `translate(${dx}px, ${dy}px) scale(.15)`;
@@ -337,8 +356,18 @@ export function Storefront({
           className="flex items-center justify-between gap-3 bg-green-50 px-5 py-3 text-sm font-medium text-green-800 transition-colors hover:bg-green-100"
         >
           <span className="flex items-center gap-2">
-            <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            <svg
+              className="h-4 w-4 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             Order {activeOrder.orderNumber} placed
           </span>
@@ -351,10 +380,14 @@ export function Storefront({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center text-red-600">
-              <svg className="h-10 w-10 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <svg className="h-10 w-10 fill-current" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight lowercase text-zinc-900">
-              {locationName.toLowerCase() === 'demo diner — riverside' ? 'wagamama' : locationName.toLowerCase()}
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 lowercase">
+              {locationName.toLowerCase() === "demo diner — riverside"
+                ? "wagamama"
+                : locationName.toLowerCase()}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -365,7 +398,7 @@ export function Storefront({
         </div>
 
         {/* Categories Slider */}
-        <div className="-mx-5 mt-6 flex overflow-x-auto px-5 pb-4 scrollbar-hide">
+        <div className="scrollbar-hide -mx-5 mt-6 flex overflow-x-auto px-5 pb-4">
           <div className="flex gap-4">
             {navCategories.map((category) => {
               const isActive = activeCategory === category.id;
@@ -374,14 +407,20 @@ export function Storefront({
                   key={category.id}
                   type="button"
                   onClick={() => handleCategoryChange(category.id)}
-                  className="flex flex-col items-center gap-2 group shrink-0"
+                  className="group flex shrink-0 flex-col items-center gap-2"
                 >
-                  <div className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl transition-all ${
-                    isActive ? "bg-yellow-400 text-zinc-900 shadow-md" : "bg-transparent text-zinc-600 hover:bg-zinc-100"
-                  }`}>
+                  <div
+                    className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl transition-all ${
+                      isActive
+                        ? "bg-yellow-400 text-zinc-900 shadow-md"
+                        : "bg-transparent text-zinc-600 hover:bg-zinc-100"
+                    }`}
+                  >
                     {categoryEmoji(category)}
                   </div>
-                  <span className={`text-sm font-medium lowercase ${isActive ? "text-zinc-900" : "text-zinc-600"}`}>
+                  <span
+                    className={`text-sm font-medium lowercase ${isActive ? "text-zinc-900" : "text-zinc-600"}`}
+                  >
                     {category.name}
                   </span>
                 </button>
@@ -392,14 +431,14 @@ export function Storefront({
 
         {/* Sub-tag Filters (per-category) */}
         {categoryTags.length > 1 && (
-          <div className="-mx-5 mt-2 flex gap-2 overflow-x-auto px-5 pb-4 scrollbar-hide">
-            {categoryTags.map(tag => (
+          <div className="scrollbar-hide -mx-5 mt-2 flex gap-2 overflow-x-auto px-5 pb-4">
+            {categoryTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setActiveFilter(tag)}
                 className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  activeFilter === tag 
-                    ? "bg-zinc-800 text-white" 
+                  activeFilter === tag
+                    ? "bg-zinc-800 text-white"
                     : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
                 }`}
               >
@@ -423,29 +462,43 @@ export function Storefront({
                 key={item.id}
                 data-item-card
                 className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border bg-white p-3 shadow-sm transition-all hover:shadow-md ${
-                  addedItemId === item.id ? "border-green-400 ring-2 ring-green-200" : "border-zinc-200"
+                  addedItemId === item.id
+                    ? "border-green-400 ring-2 ring-green-200"
+                    : "border-zinc-200"
                 }`}
               >
                 {/* How many of this dish are in the order. Read straight
                     from the cart, so placing an order clears every badge
                     at once — no stale counts left on the menu. */}
                 {quantityInCart(item.id) > 0 && (
-                  <span className="absolute left-0 top-0 z-10 flex h-8 min-w-8 items-center justify-center rounded-br-2xl rounded-tl-2xl bg-green-500 px-2.5 text-sm font-bold tabular-nums text-white shadow-sm">
+                  <span className="absolute top-0 left-0 z-10 flex h-8 min-w-8 items-center justify-center rounded-tl-2xl rounded-br-2xl bg-green-500 px-2.5 text-sm font-bold text-white tabular-nums shadow-sm">
                     {quantityInCart(item.id)}
                   </span>
                 )}
 
                 {/* Heart button */}
                 <button
-                  className="absolute right-3 top-3 z-10 rounded-full bg-white/80 p-1.5 text-zinc-400 backdrop-blur hover:text-red-500"
+                  className="absolute top-3 right-3 z-10 rounded-full bg-white/80 p-1.5 text-zinc-400 backdrop-blur hover:text-red-500"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    ></path>
+                  </svg>
                 </button>
-                
+
                 {/* Image — click opens detail */}
-                <div 
-                  className="relative aspect-square w-full mb-3 rounded-full overflow-hidden"
+                <div
+                  className="relative mb-3 aspect-square w-full overflow-hidden rounded-full"
                   onClick={() => setSelectedItem(item)}
                 >
                   {item.images && item.images[0] ? (
@@ -467,19 +520,19 @@ export function Storefront({
 
                   {/* Added animation overlay */}
                   {addedItemId === item.id && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 rounded-full animate-pulse">
+                    <div className="absolute inset-0 flex animate-pulse items-center justify-center rounded-full bg-green-500/20">
                       <span className="text-2xl">✓</span>
                     </div>
                   )}
                 </div>
-                
+
                 {/* Name, price & quick add button */}
                 <div className="mt-auto flex items-center justify-between gap-1 pt-1">
-                  <div className="flex-1 min-w-0" onClick={() => setSelectedItem(item)}>
-                    <h3 className="text-xs font-semibold lowercase leading-tight text-zinc-800 line-clamp-2">
+                  <div className="min-w-0 flex-1" onClick={() => setSelectedItem(item)}>
+                    <h3 className="line-clamp-2 text-xs leading-tight font-semibold text-zinc-800 lowercase">
                       {item.name}
                     </h3>
-                    <p className="mt-0.5 text-xs font-bold text-zinc-800 whitespace-nowrap">
+                    <p className="mt-0.5 text-xs font-bold whitespace-nowrap text-zinc-800">
                       {money(item.basePriceCents)}
                     </p>
                   </div>
@@ -487,7 +540,7 @@ export function Storefront({
                     type="button"
                     aria-label={`Add ${item.name} to order`}
                     onClick={(event) => handleQuickAdd(item, event)}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500 text-white shadow-sm transition-transform active:scale-90 hover:bg-green-600"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500 text-white shadow-sm transition-transform hover:bg-green-600 active:scale-90"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -504,7 +557,7 @@ export function Storefront({
           item={{
             ...selectedItem,
             images: selectedItem.images ?? [],
-            dietaryTags: selectedItem.dietaryTags ?? []
+            dietaryTags: selectedItem.dietaryTags ?? [],
           }}
           money={money}
           onClose={() => setSelectedItem(null)}
@@ -521,7 +574,7 @@ export function Storefront({
           diner to what they were looking at. */}
       <div
         id="cart-bar"
-        className={`fixed inset-x-0 bottom-0 z-[60] mx-auto w-full max-w-md bg-zinc-950 px-5 py-4 text-white rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.15)] transition-transform duration-300 ${
+        className={`fixed inset-x-0 bottom-0 z-[60] mx-auto w-full max-w-md rounded-t-2xl bg-zinc-950 px-5 py-4 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] transition-transform duration-300 ${
           cartBump ? "scale-[1.03]" : "scale-100"
         }`}
       >
@@ -536,7 +589,19 @@ export function Storefront({
               : "Order"}
           </span>
           <div className="flex items-center gap-3">
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              ></path>
+            </svg>
           </div>
         </button>
       </div>
@@ -592,7 +657,10 @@ function CheckoutSheet({
   const [scheduledAt, setScheduledAt] = useState("");
   // Set once the order lands, so the success state can play inside this
   // same sheet rather than replacing the whole screen.
-  const [placed, setPlaced] = useState<{ orderNumber: number; trackToken: string } | null>(null);
+  const [placed, setPlaced] = useState<{
+    orderNumber: number;
+    trackToken: string;
+  } | null>(null);
 
   // Mirrors the server's rule (order.service DELIVERY_FEE_CENTS) so the
   // quoted total is the one the order is written with.
@@ -714,15 +782,27 @@ function CheckoutSheet({
       onClick={handleClose}
     >
       <div
-        className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-md flex flex-col max-h-[85vh] rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 ease-out ${
+        className={`absolute inset-x-0 bottom-0 mx-auto flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 ease-out ${
           isVisible ? "translate-y-0" : "translate-y-full"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between bg-zinc-950 px-5 py-4 text-white rounded-t-3xl">
+        <div className="flex shrink-0 items-center justify-between rounded-t-3xl bg-zinc-950 px-5 py-4 text-white">
           <div className="flex items-center gap-3">
             <button onClick={handleClose} className="p-1 hover:text-zinc-300">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15 19l-7-7 7-7"
+                ></path>
+              </svg>
             </button>
             {/* The same line the cart bar shows, so opening the sheet
                 reads as that bar expanding rather than a new screen. */}
@@ -732,7 +812,14 @@ function CheckoutSheet({
                 : "Order"}
             </h2>
           </div>
-          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+            ></path>
+          </svg>
         </div>
 
         <div className="flex flex-1 flex-col overflow-y-auto p-5">
@@ -745,8 +832,18 @@ function CheckoutSheet({
                 {/* A ring that expands and fades outward, behind the tick. */}
                 <span className="order-pop-ring absolute inset-0 animate-ping rounded-full bg-green-200 opacity-75" />
                 <div className="order-pop relative flex h-20 w-20 items-center justify-center rounded-full bg-green-500 text-white shadow-lg">
-                  <svg className="h-11 w-11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                  <svg
+                    className="h-11 w-11"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.5"
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 </div>
               </div>
@@ -755,14 +852,26 @@ function CheckoutSheet({
                 Order {placed.orderNumber} is with the kitchen
               </p>
               <p className="mt-1 text-sm text-zinc-500">
-                {scheduledAt ? `Scheduled for ${scheduledAt}` : "You can keep browsing the menu"}
+                {scheduledAt
+                  ? `Scheduled for ${scheduledAt}`
+                  : "You can keep browsing the menu"}
               </p>
             </div>
           ) : cart.lines.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center pt-20">
               <div className="mb-4 text-zinc-300">
-                <svg className="h-24 w-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                <svg
+                  className="h-24 w-24"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                  ></path>
                 </svg>
               </div>
               <p className="text-lg font-medium text-zinc-600">Nothing to order</p>
@@ -781,8 +890,11 @@ function CheckoutSheet({
                   <button
                     key={tab.value}
                     type="button"
-                    onClick={() => { setType(tab.value as OrderType); setError(null); }}
-                    className={`flex-1 rounded-lg px-1 py-3 text-[13px] tracking-wider font-semibold transition-colors ${
+                    onClick={() => {
+                      setType(tab.value as OrderType);
+                      setError(null);
+                    }}
+                    className={`flex-1 rounded-lg px-1 py-3 text-[13px] font-semibold tracking-wider transition-colors ${
                       type === tab.value
                         ? "bg-zinc-100 text-green-600"
                         : "text-zinc-500 hover:text-zinc-800"
@@ -795,10 +907,13 @@ function CheckoutSheet({
 
               <ul className="mt-4 flex flex-col gap-6 border-t border-dashed border-zinc-300 pt-6">
                 {cart.lines.map((line) => (
-                  <li key={line.id ?? line.menuItemId} className="flex items-center justify-between gap-3">
+                  <li
+                    key={line.id ?? line.menuItemId}
+                    className="flex items-center justify-between gap-3"
+                  >
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                       <span className="text-[15px] text-zinc-700">{line.quantity} x</span>
-                      <span className="truncate text-[15px] lowercase font-medium text-zinc-900">
+                      <span className="truncate text-[15px] font-medium text-zinc-900 lowercase">
                         {line.name}
                       </span>
                     </div>
@@ -851,23 +966,37 @@ function CheckoutSheet({
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Add note 🙏🏻"
                   rows={2}
-                  className="w-full rounded-xl bg-zinc-50 p-4 text-[15px] text-zinc-900 placeholder:text-zinc-500 border border-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+                  className="w-full rounded-xl border border-zinc-100 bg-zinc-50 p-4 text-[15px] text-zinc-900 placeholder:text-zinc-500 focus:ring-1 focus:ring-zinc-300 focus:outline-none"
                 />
               </div>
 
               {/* When — optional for every order type. Empty means the
                   kitchen starts it straight away. */}
               <div className="mt-4 flex items-center gap-3">
-                <svg className="h-5 w-5 shrink-0 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg
+                  className="h-5 w-5 shrink-0 text-zinc-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
                 <select
                   aria-label="When"
                   value={scheduledAt}
                   onChange={(event) => setScheduledAt(event.target.value)}
-                  className="h-12 flex-1 rounded-lg bg-zinc-100 px-4 text-[15px] font-medium text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+                  className="h-12 flex-1 rounded-lg bg-zinc-100 px-4 text-[15px] font-medium text-zinc-900 focus:ring-1 focus:ring-zinc-300 focus:outline-none"
                 >
                   <option value="">When ready</option>
                   {timeSlots.map((slot) => (
-                    <option key={slot} value={slot}>{slot}</option>
+                    <option key={slot} value={slot}>
+                      {slot}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -879,8 +1008,11 @@ function CheckoutSheet({
                   <select
                     aria-label="Table"
                     value={seatedTableId}
-                    onChange={(event) => { setSeatedTableId(event.target.value); setError(null); }}
-                    className={`h-12 w-full rounded-lg border px-4 text-[15px] font-medium focus:outline-none focus:ring-1 focus:ring-zinc-300 ${
+                    onChange={(event) => {
+                      setSeatedTableId(event.target.value);
+                      setError(null);
+                    }}
+                    className={`h-12 w-full rounded-lg border px-4 text-[15px] font-medium focus:ring-1 focus:ring-zinc-300 focus:outline-none ${
                       missing.includes("table")
                         ? "border-zinc-800 bg-amber-100 text-zinc-600"
                         : "border-transparent bg-zinc-100 text-zinc-900"
@@ -925,13 +1057,19 @@ function CheckoutSheet({
                   mystery. A real failure (offline, item sold out)
                   replaces it — that message is the more urgent one. */}
               {(error ?? (missing.length > 0 ? "Fill all required fields" : null)) && (
-                <p role="alert" className="mt-4 text-center text-sm font-medium text-red-600">
+                <p
+                  role="alert"
+                  className="mt-4 text-center text-sm font-medium text-red-600"
+                >
                   {error ?? "Fill all required fields"}
                 </p>
               )}
 
               <p className="mt-6 text-xs text-zinc-500">
-                By clicking Order, you confirm your age is 18+ and you agree to the <a href="#" className="underline">terms</a>
+                By clicking Order, you confirm your age is 18+ and you agree to the{" "}
+                <a href="#" className="underline">
+                  terms
+                </a>
               </p>
             </>
           )}
@@ -980,7 +1118,7 @@ function Field({
       placeholder={`${label}…`}
       aria-label={label}
       aria-invalid={invalid || undefined}
-      className={`h-12 w-full rounded-lg border px-4 text-[15px] font-medium focus:outline-none focus:ring-1 focus:ring-zinc-300 ${
+      className={`h-12 w-full rounded-lg border px-4 text-[15px] font-medium focus:ring-1 focus:ring-zinc-300 focus:outline-none ${
         invalid
           ? "border-zinc-800 bg-amber-100 text-zinc-900 placeholder:text-zinc-600"
           : "border-transparent bg-zinc-100 text-zinc-900 placeholder:text-zinc-500"
@@ -1019,12 +1157,21 @@ function PhoneField({
         invalid ? "border-zinc-800 bg-amber-100" : "border-transparent bg-zinc-100"
       }`}
     >
-      <div className="relative flex shrink-0 items-center gap-1 border-r border-zinc-300/70 pl-3 pr-2">
-        <span aria-hidden className="text-base leading-none">{country?.flag ?? "🌐"}</span>
-        <span className={`text-[15px] font-medium ${invalid ? "text-zinc-900" : "text-zinc-900"}`}>
+      <div className="relative flex shrink-0 items-center gap-1 border-r border-zinc-300/70 pr-2 pl-3">
+        <span aria-hidden className="text-base leading-none">
+          {country?.flag ?? "🌐"}
+        </span>
+        <span
+          className={`text-[15px] font-medium ${invalid ? "text-zinc-900" : "text-zinc-900"}`}
+        >
           {dialCode}
         </span>
-        <svg aria-hidden className="h-3 w-3 text-zinc-500" viewBox="0 0 12 12" fill="currentColor">
+        <svg
+          aria-hidden
+          className="h-3 w-3 text-zinc-500"
+          viewBox="0 0 12 12"
+          fill="currentColor"
+        >
           <path d="M2 4l4 4 4-4z" />
         </svg>
         {/* The native select sits invisibly over the pill so the phone's
@@ -1105,9 +1252,16 @@ function OrderPlaced({
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col items-center justify-center px-6 text-center bg-white">
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600 mb-6">
-        <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col items-center justify-center bg-white px-6 text-center">
+      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600">
+        <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M5 13l4 4L19 7"
+          ></path>
+        </svg>
       </div>
       <h1 className="mt-4 text-2xl font-bold text-zinc-900">
         Order {orderNumber} is placed
@@ -1132,9 +1286,7 @@ function OrderPlaced({
             </button>
           ))}
           {paymentMode === "OPTIONAL" && (
-            <p className="mt-2 text-sm text-zinc-500">
-              Or pay at the counter.
-            </p>
+            <p className="mt-2 text-sm text-zinc-500">Or pay at the counter.</p>
           )}
         </div>
       )}
@@ -1154,4 +1306,3 @@ function OrderPlaced({
     </div>
   );
 }
-

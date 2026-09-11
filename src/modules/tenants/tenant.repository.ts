@@ -24,10 +24,7 @@ export async function createTenantRecord(input: CreateTenantInput) {
   const tenantId = createId();
 
   return rawPrisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(
-      `select set_config('app.tenant_id', $1, true)`,
-      tenantId,
-    );
+    await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantId);
 
     return tx.tenant.create({
       data: {

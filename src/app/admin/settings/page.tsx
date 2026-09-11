@@ -36,8 +36,8 @@ export default async function PlatformSettingsPage() {
           Platform settings
         </h2>
         <p className="mt-1 text-sm text-zinc-600">
-          Configure the platform without redeploying. Secrets are encrypted
-          before they are stored.
+          Configure the platform without redeploying. Secrets are encrypted before they
+          are stored.
         </p>
       </div>
 
@@ -53,9 +53,8 @@ export default async function PlatformSettingsPage() {
           {storage.detail ? ` (${storage.detail})` : ""}.
         </p>
         <p className="mt-2 text-xs text-zinc-500">
-          Set by the deployment, not here: local disk needs a mounted volume,
-          and S3 needs credentials the server reads at startup. See
-          DEPLOYMENT.md.
+          Set by the deployment, not here: local disk needs a mounted volume, and S3 needs
+          credentials the server reads at startup. See DEPLOYMENT.md.
         </p>
       </section>
     </div>

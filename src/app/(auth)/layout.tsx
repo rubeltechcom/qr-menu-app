@@ -40,13 +40,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       <aside className="hidden w-1/2 flex-col justify-center bg-gradient-to-br from-zinc-900 to-zinc-800 px-12 py-16 lg:flex">
         <blockquote className="max-w-lg">
-          <p className="text-3xl font-bold leading-tight tracking-tight text-white">
-            Put a QR code on every table and let your guests order for
-            themselves.
+          <p className="text-3xl leading-tight font-bold tracking-tight text-white">
+            Put a QR code on every table and let your guests order for themselves.
           </p>
           <p className="mt-6 text-lg leading-relaxed text-zinc-300">
-            Your menu updates instantly, orders arrive on the kitchen screen with
-            a sound, and nobody has to install anything.
+            Your menu updates instantly, orders arrive on the kitchen screen with a sound,
+            and nobody has to install anything.
           </p>
         </blockquote>
 

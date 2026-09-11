@@ -36,11 +36,7 @@ const storage = new AsyncLocalStorage<TenantContext>();
  *
  * See src/lib/require-tenant.ts and src/app/t/[publicCode]/page.tsx.
  */
-export function runWithTenant<T>(
-  tenantId: string,
-  tenantSlug: string,
-  fn: () => T,
-): T {
+export function runWithTenant<T>(tenantId: string, tenantSlug: string, fn: () => T): T {
   const context: TenantContext = {
     tenantId,
     tenantSlug,

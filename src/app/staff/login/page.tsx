@@ -33,8 +33,7 @@ export default function StaffLoginPage() {
   // A slug is lowercase with hyphens, and staff on a tablet get a
   // capital first letter and a trailing space from autocorrect — which
   // would otherwise come back as "Restaurant not found".
-  const normalise = (value: string) =>
-    value.toLowerCase().trim().replace(/\s+/g, "-");
+  const normalise = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-");
 
   const canSubmit = restaurant.trim().length > 0 && pin.length >= 4;
 
@@ -66,7 +65,7 @@ export default function StaffLoginPage() {
               // Deliberately not a realistic-looking slug: a placeholder
               // that reads like a real answer gets submitted blank.
               placeholder="your-restaurant"
-              className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3.5 text-center text-lg outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+              className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3.5 text-center text-lg transition-colors outline-none placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
             <p className="mt-1.5 text-center text-xs text-zinc-500">
               The name in your menu link, e.g. demo-diner
@@ -86,8 +85,10 @@ export default function StaffLoginPage() {
               autoComplete="off"
               required
               value={pin}
-              onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, MAX_PIN))}
-              className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3.5 text-center text-3xl tracking-[0.5em] outline-none transition-colors focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+              onChange={(event) =>
+                setPin(event.target.value.replace(/\D/g, "").slice(0, MAX_PIN))
+              }
+              className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3.5 text-center text-3xl tracking-[0.5em] transition-colors outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
 

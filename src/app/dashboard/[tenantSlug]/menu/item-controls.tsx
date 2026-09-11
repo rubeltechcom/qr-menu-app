@@ -69,7 +69,13 @@ export function DuplicateItemButton({
   );
 }
 
-export function DeleteItemButton({ tenantSlug, itemId }: { tenantSlug: string; itemId: string }) {
+export function DeleteItemButton({
+  tenantSlug,
+  itemId,
+}: {
+  tenantSlug: string;
+  itemId: string;
+}) {
   const [isPending, startTransition] = useTransition();
   return (
     <button

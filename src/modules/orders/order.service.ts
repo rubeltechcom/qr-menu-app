@@ -74,7 +74,10 @@ export async function placeOrder(input: unknown) {
       );
     }
     if (!item.isAvailable) {
-      throw new OrderError(`${item.name} is not available right now.`, "ITEM_UNAVAILABLE");
+      throw new OrderError(
+        `${item.name} is not available right now.`,
+        "ITEM_UNAVAILABLE",
+      );
     }
 
     // Modifier prices, also re-read rather than trusted.
@@ -262,7 +265,11 @@ export async function transitionMyOrder(params: {
   return updated;
 }
 
-export async function rejectMyOrder(orderId: string, input: unknown, actorUserId?: string) {
+export async function rejectMyOrder(
+  orderId: string,
+  input: unknown,
+  actorUserId?: string,
+) {
   const { reason } = rejectOrderSchema.parse(input);
   return transitionMyOrder({ orderId, status: "REJECTED", reason, actorUserId });
 }

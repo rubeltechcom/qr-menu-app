@@ -17,7 +17,10 @@ export const signUpSchema = z.object({
     .toLowerCase()
     .min(2)
     .max(63)
-    .regex(/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/, "Use lowercase letters, numbers, and hyphens only"),
+    .regex(
+      /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/,
+      "Use lowercase letters, numbers, and hyphens only",
+    ),
 });
 
 export type SignUpInput = z.infer<typeof signUpSchema>;

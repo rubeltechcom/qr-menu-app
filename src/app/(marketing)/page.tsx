@@ -119,15 +119,15 @@ export default function HomePage() {
               Free plan — no card required
             </span>
 
-            <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
+            <h1 className="mt-5 text-4xl leading-[1.1] font-bold tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
               Your menu, your QR code, your orders.
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-zinc-600">
-              Give every table a QR code. Guests browse your menu and order from
-              their own phone — dine-in, takeaway or delivery — and the order
-              lands straight on your kitchen screen. Update a price from your
-              phone and every table sees it instantly.
+              Give every table a QR code. Guests browse your menu and order from their own
+              phone — dine-in, takeaway or delivery — and the order lands straight on your
+              kitchen screen. Update a price from your phone and every table sees it
+              instantly.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -157,7 +157,9 @@ export default function HomePage() {
               <div className="flex items-center justify-between rounded-t-[1.8rem] bg-white px-5 pt-5">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">⭐</span>
-                  <span className="text-lg font-bold lowercase tracking-tight">your place</span>
+                  <span className="text-lg font-bold tracking-tight lowercase">
+                    your place
+                  </span>
                 </div>
                 <span className="rounded-full border border-zinc-200 px-2 py-1 text-[10px] font-medium">
                   English
@@ -170,7 +172,10 @@ export default function HomePage() {
                   { icon: "🍛", label: "curry", active: false },
                   { icon: "🍜", label: "ramen", active: false },
                 ].map((category) => (
-                  <div key={category.label} className="flex flex-col items-center gap-1.5">
+                  <div
+                    key={category.label}
+                    className="flex flex-col items-center gap-1.5"
+                  >
                     <div
                       className={`flex h-12 w-12 items-center justify-center rounded-2xl text-2xl ${
                         category.active ? "bg-yellow-400" : "bg-zinc-100"
@@ -178,7 +183,7 @@ export default function HomePage() {
                     >
                       {category.icon}
                     </div>
-                    <span className="text-[10px] font-medium lowercase text-zinc-600">
+                    <span className="text-[10px] font-medium text-zinc-600 lowercase">
                       {category.label}
                     </span>
                   </div>
@@ -199,7 +204,9 @@ export default function HomePage() {
                     <div className="mb-2 flex aspect-square items-center justify-center rounded-full bg-zinc-100 text-3xl">
                       {dish.emoji}
                     </div>
-                    <p className="truncate text-[11px] font-semibold lowercase">{dish.name}</p>
+                    <p className="truncate text-[11px] font-semibold lowercase">
+                      {dish.name}
+                    </p>
                     <div className="mt-0.5 flex items-center justify-between">
                       <span className="text-[11px] font-bold">{dish.price} £</span>
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-xs text-white">
@@ -253,8 +260,8 @@ export default function HomePage() {
               Everything the front of house needs
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-600">
-              Built around a real service: a phone at the table, a screen in the
-              kitchen, and nothing in between that can go wrong.
+              Built around a real service: a phone at the table, a screen in the kitchen,
+              and nothing in between that can go wrong.
             </p>
           </div>
 
@@ -265,7 +272,9 @@ export default function HomePage() {
                   <feature.icon className="h-5 w-5" />
                 </div>
                 <h3 className="mt-4 font-semibold text-zinc-900">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-600">{feature.body}</p>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+                  {feature.body}
+                </p>
               </div>
             ))}
           </div>

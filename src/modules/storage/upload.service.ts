@@ -16,11 +16,7 @@ import type { StoredObject, UploadKind } from "./provider";
  */
 
 export type UploadErrorCode =
-  | "NO_FILE"
-  | "TOO_LARGE"
-  | "UNSUPPORTED_TYPE"
-  | "TOO_MANY_PIXELS"
-  | "STORAGE_FAILED";
+  "NO_FILE" | "TOO_LARGE" | "UNSUPPORTED_TYPE" | "TOO_MANY_PIXELS" | "STORAGE_FAILED";
 
 export class UploadError extends Error {
   constructor(
@@ -90,7 +86,10 @@ export async function uploadImage(params: {
   // video's are inside the container and not worth parsing here, since
   // the size cap already bounds the damage.
   const dimensions = isVideo ? null : readDimensions(bytes, type);
-  if (dimensions && (dimensions.width > MAX_EDGE_PIXELS || dimensions.height > MAX_EDGE_PIXELS)) {
+  if (
+    dimensions &&
+    (dimensions.width > MAX_EDGE_PIXELS || dimensions.height > MAX_EDGE_PIXELS)
+  ) {
     throw new UploadError(
       "That image's dimensions are too large. Please resize it first.",
       "TOO_MANY_PIXELS",
@@ -117,7 +116,10 @@ export async function uploadImage(params: {
     // The underlying ENOSPC/EACCES/S3 message goes to the server log,
     // never to the browser — it would leak paths and bucket names.
     console.error("[storage] failed to store an upload", cause);
-    throw new UploadError("We couldn't save that file. Please try again.", "STORAGE_FAILED");
+    throw new UploadError(
+      "We couldn't save that file. Please try again.",
+      "STORAGE_FAILED",
+    );
   }
 }
 

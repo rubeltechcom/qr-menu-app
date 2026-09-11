@@ -27,7 +27,15 @@ interface ItemModalProps {
   quantity: number;
 }
 
-export function ItemModal({ item, money, onClose, onAdd, onFly, emoji, quantity }: ItemModalProps) {
+export function ItemModal({
+  item,
+  money,
+  onClose,
+  onAdd,
+  onFly,
+  emoji,
+  quantity,
+}: ItemModalProps) {
   const heroRef = useRef<HTMLImageElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [bump, setBump] = useState(false);
@@ -74,26 +82,57 @@ export function ItemModal({ item, money, onClose, onAdd, onFly, emoji, quantity 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Image & Actions */}
-        <div className="relative aspect-[4/3] w-full bg-zinc-50 shrink-0">
+        <div className="relative aspect-[4/3] w-full shrink-0 bg-zinc-50">
           {item.images[0] ? (
             /* eslint-disable-next-line @next/next/no-img-element -- uploads may
                live on a bucket whose host is unknown at build time, so
                next/image's remotePatterns cannot cover them. See the note in
                src/modules/storage/. */
-            <img ref={heroRef} src={item.images[0]} alt={item.name} className="h-full w-full object-cover" />
+            <img
+              ref={heroRef}
+              src={item.images[0]}
+              alt={item.name}
+              className="h-full w-full object-cover"
+            />
           ) : (
-            <div className="flex h-full items-center justify-center text-zinc-400 text-6xl">🍽️</div>
+            <div className="flex h-full items-center justify-center text-6xl text-zinc-400">
+              🍽️
+            </div>
           )}
-          
+
           <button
             onClick={handleClose}
-            className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-zinc-600 backdrop-blur shadow-sm"
+            className="absolute top-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-zinc-600 shadow-sm backdrop-blur"
           >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M15 19l-7-7 7-7"
+              ></path>
+            </svg>
           </button>
-          
-          <button className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-zinc-400 backdrop-blur shadow-sm hover:text-red-500">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+
+          <button className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-zinc-400 shadow-sm backdrop-blur hover:text-red-500">
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              ></path>
+            </svg>
           </button>
         </div>
 
@@ -102,16 +141,18 @@ export function ItemModal({ item, money, onClose, onAdd, onFly, emoji, quantity 
         <div className="flex shrink-0 items-center justify-between gap-4 bg-zinc-50 px-6 py-4">
           <div className="flex min-w-0 items-center gap-3">
             {emoji && <span className="text-2xl">{emoji}</span>}
-            <h2 className="truncate text-xl font-bold lowercase text-zinc-900">{item.name}</h2>
+            <h2 className="truncate text-xl font-bold text-zinc-900 lowercase">
+              {item.name}
+            </h2>
           </div>
-          <p className="whitespace-nowrap text-xl font-bold text-zinc-900">
+          <p className="text-xl font-bold whitespace-nowrap text-zinc-900">
             {money(item.basePriceCents)}
           </p>
         </div>
 
         {/* Floating Add Button & Divider */}
-        <div className="relative h-px w-full shrink-0 bg-zinc-200 mb-10">
-          <div className="absolute right-6 top-1/2 -translate-y-1/2">
+        <div className="relative mb-10 h-px w-full shrink-0 bg-zinc-200">
+          <div className="absolute top-1/2 right-6 -translate-y-1/2">
             {quantity === 0 ? (
               <button
                 aria-label={`Add ${item.name} to order`}
@@ -162,7 +203,6 @@ export function ItemModal({ item, money, onClose, onAdd, onFly, emoji, quantity 
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

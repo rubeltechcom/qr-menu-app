@@ -28,9 +28,7 @@ export default async function OrdersPage({
   if (!location) {
     return (
       <div className="mx-auto max-w-lg px-6 py-16">
-        <h1 className="text-xl font-semibold text-zinc-900">
-          No location yet
-        </h1>
+        <h1 className="text-xl font-semibold text-zinc-900">No location yet</h1>
         <p className="mt-2 text-sm text-zinc-600">
           Add a location and some tables before orders can arrive.
         </p>

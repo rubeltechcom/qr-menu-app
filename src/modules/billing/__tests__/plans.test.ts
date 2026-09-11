@@ -43,7 +43,9 @@ describe("plan entitlements", () => {
     expect(effectivePlan({ plan: "PRO", subscriptionStatus: "TRIALING" }).id).toBe("PRO");
 
     // But a cancelled subscription really does fall back.
-    expect(effectivePlan({ plan: "PRO", subscriptionStatus: "CANCELED" }).id).toBe("FREE");
+    expect(effectivePlan({ plan: "PRO", subscriptionStatus: "CANCELED" }).id).toBe(
+      "FREE",
+    );
     expect(can({ plan: "PRO", subscriptionStatus: "CANCELED" }, "apiAccess")).toBe(false);
   });
 

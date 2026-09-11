@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { Plus, Trash2, X } from "lucide-react";
-import { createCategoryAction, deleteCategoryAction, updateCategoryAction } from "./actions";
+import {
+  createCategoryAction,
+  deleteCategoryAction,
+  updateCategoryAction,
+} from "./actions";
 
 /**
  * Naming a category and choosing its icon.
@@ -15,9 +19,36 @@ import { createCategoryAction, deleteCategoryAction, updateCategoryAction } from
 
 /** Offered by the picker. Anything the owner types is still accepted. */
 const SUGGESTED_ICONS = [
-  "🍽️", "👌", "🍛", "🍜", "🍤", "🍲", "🥟", "🍡", "🥤", "🍕",
-  "🍔", "🌮", "🍣", "🥗", "🍰", "☕", "🍺", "🍷", "🥩", "🍗",
-  "🍟", "🥞", "🧀", "🍦", "🌶️", "🥘", "🍱", "🥐", "🍹", "🫖",
+  "🍽️",
+  "👌",
+  "🍛",
+  "🍜",
+  "🍤",
+  "🍲",
+  "🥟",
+  "🍡",
+  "🥤",
+  "🍕",
+  "🍔",
+  "🌮",
+  "🍣",
+  "🥗",
+  "🍰",
+  "☕",
+  "🍺",
+  "🍷",
+  "🥩",
+  "🍗",
+  "🍟",
+  "🥞",
+  "🧀",
+  "🍦",
+  "🌶️",
+  "🥘",
+  "🍱",
+  "🥐",
+  "🍹",
+  "🫖",
 ];
 
 export function AddCategoryButton({
@@ -43,7 +74,11 @@ export function AddCategoryButton({
       </button>
 
       {isOpen && (
-        <CategorySheet tenantSlug={tenantSlug} menuId={menuId} onClose={() => setOpen(false)} />
+        <CategorySheet
+          tenantSlug={tenantSlug}
+          menuId={menuId}
+          onClose={() => setOpen(false)}
+        />
       )}
     </>
   );
@@ -66,7 +101,12 @@ export function EditCategoryButton({
         aria-label={`Edit ${category.name}`}
         className="text-zinc-400 transition-colors hover:text-zinc-700"
       >
-        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="h-3.5 w-3.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -171,8 +211,8 @@ function CategorySheet({
           <div>
             <span className="text-sm font-medium text-zinc-800">Icon</span>
             <p className="mt-0.5 text-xs text-zinc-500">
-              Shown to guests above the category name. Leave it blank and we
-              pick one to match the name.
+              Shown to guests above the category name. Leave it blank and we pick one to
+              match the name.
             </p>
 
             <div className="mt-3 flex flex-wrap gap-1.5">
@@ -195,7 +235,10 @@ function CategorySheet({
           </div>
 
           {error && (
-            <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <p
+              role="alert"
+              className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
               {error}
             </p>
           )}

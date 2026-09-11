@@ -177,10 +177,7 @@ export async function applySubscriptionState(params: {
   // pastDueSince starts the 7-day grace clock, and is cleared the
   // moment a payment succeeds — so a tenant who pays on day 6 is not
   // still counted as overdue.
-  const pastDueSql =
-    status === "PAST_DUE"
-      ? `COALESCE("pastDueSince", now())`
-      : `NULL`;
+  const pastDueSql = status === "PAST_DUE" ? `COALESCE("pastDueSince", now())` : `NULL`;
 
   await rawPrisma.$executeRawUnsafe(
     `UPDATE tenants SET

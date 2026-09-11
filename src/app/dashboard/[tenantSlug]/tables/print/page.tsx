@@ -44,30 +44,28 @@ export default async function PrintTablesPage({
 
       <div className="no-print mb-8 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-zinc-900">
-            Print QR codes
-          </h1>
+          <h1 className="text-xl font-semibold text-zinc-900">Print QR codes</h1>
           <p className="mt-1 text-sm text-zinc-600">
-            {cards.length} {cards.length === 1 ? "table" : "tables"} — cut along the
-            lines and stick one on each table.
+            {cards.length} {cards.length === 1 ? "table" : "tables"} — cut along the lines
+            and stick one on each table.
           </p>
         </div>
         {/* Rendered as a plain link rather than a print button: a button
             needs client JS for window.print(), and the browser's own
             Ctrl/Cmd+P does the same job on a page built for it. */}
         <p className="text-sm text-zinc-500">
-          Press <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">Ctrl</kbd>
+          Press{" "}
+          <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">Ctrl</kbd>
           {" / "}
           <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">⌘</kbd>
           {" + "}
-          <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">P</kbd> to print
+          <kbd className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">P</kbd> to
+          print
         </p>
       </div>
 
       {cards.length === 0 ? (
-        <p className="text-sm text-zinc-600">
-          No tables yet — add some first.
-        </p>
+        <p className="text-sm text-zinc-600">No tables yet — add some first.</p>
       ) : (
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 print:grid-cols-3 print:gap-4">
           {cards.map((card) => (

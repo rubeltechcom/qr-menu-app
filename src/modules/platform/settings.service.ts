@@ -165,7 +165,8 @@ export function renderSettings() {
     ...group,
     settings: group.settings.map((definition): RenderedSetting => {
       const value = getSetting(definition.key);
-      const fromEnv = !snapshot.has(definition.key) && envFallback(definition) !== undefined;
+      const fromEnv =
+        !snapshot.has(definition.key) && envFallback(definition) !== undefined;
 
       return {
         ...definition,

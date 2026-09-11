@@ -21,19 +21,11 @@ export default async function PlatformAdminPage() {
 
   return (
     <div className="flex flex-col gap-6">
-
       <dl className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="Restaurants" value={totalTenants} />
         <Stat label="On trial" value={trialing} />
-        <Stat
-          label="Past due"
-          value={pastDue}
-          tone={pastDue > 0 ? "warn" : undefined}
-        />
-        <Stat
-          label="Paid plans"
-          value={(byPlan.SMART ?? 0) + (byPlan.PRO ?? 0)}
-        />
+        <Stat label="Past due" value={pastDue} tone={pastDue > 0 ? "warn" : undefined} />
+        <Stat label="Paid plans" value={(byPlan.SMART ?? 0) + (byPlan.PRO ?? 0)} />
       </dl>
 
       <div className="mt-8 overflow-x-auto">
@@ -63,9 +55,7 @@ export default async function PlatformAdminPage() {
               return (
                 <tr
                   key={tenant.id}
-                  className={`border-b border-zinc-200 ${
-                    suspended ? "opacity-50" : ""
-                  }`}
+                  className={`border-b border-zinc-200 ${suspended ? "opacity-50" : ""}`}
                 >
                   <td className="py-3 pr-4">
                     <Link
@@ -107,9 +97,7 @@ export default async function PlatformAdminPage() {
                       <button
                         type="submit"
                         className={`text-xs font-medium underline underline-offset-2 ${
-                          suspended
-                            ? "text-green-700"
-                            : "text-red-600"
+                          suspended ? "text-green-700" : "text-red-600"
                         }`}
                       >
                         {suspended ? "Restore" : "Suspend"}
@@ -124,30 +112,20 @@ export default async function PlatformAdminPage() {
       </div>
 
       <p className="mt-6 text-xs text-zinc-500">
-        Suspending hides a restaurant&apos;s storefront. Nothing is deleted —
-        menus, tables and past orders stay exactly where they are.
+        Suspending hides a restaurant&apos;s storefront. Nothing is deleted — menus,
+        tables and past orders stay exactly where they are.
       </p>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone?: "warn";
-}) {
+function Stat({ label, value, tone }: { label: string; value: number; tone?: "warn" }) {
   return (
     <div className="rounded-xl border border-zinc-200 p-4">
       <dt className="text-xs text-zinc-500">{label}</dt>
       <dd
         className={`mt-1 text-2xl font-semibold tabular-nums ${
-          tone === "warn" && value > 0
-            ? "text-amber-700"
-            : "text-zinc-900"
+          tone === "warn" && value > 0 ? "text-amber-700" : "text-zinc-900"
         }`}
       >
         {value}
@@ -176,9 +154,7 @@ function SubscriptionBadge({
     <span className={tone}>
       {status.toLowerCase().replace("_", " ")}
       {pastDueSince && (
-        <span className="block text-xs">
-          since {pastDueSince.toLocaleDateString()}
-        </span>
+        <span className="block text-xs">since {pastDueSince.toLocaleDateString()}</span>
       )}
     </span>
   );

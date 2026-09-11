@@ -202,7 +202,9 @@ export function ImageUploader({
                     style={{ width: `${state.progress}%` }}
                   />
                 </div>
-                <span className="text-xs font-medium tabular-nums">{state.progress}%</span>
+                <span className="text-xs font-medium tabular-nums">
+                  {state.progress}%
+                </span>
               </div>
             )}
 
@@ -211,7 +213,7 @@ export function ImageUploader({
                 type="button"
                 onClick={remove}
                 aria-label="Remove photo"
-                className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80"
+                className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80"
               >
                 <X className="h-4 w-4" />
               </button>

@@ -55,7 +55,9 @@ export function KitchenDisplay({
   // Re-render once a minute so the age colours and "12m" labels stay
   // truthful on a screen nobody touches for an hour.
   const [, setTick] = useState(0);
-  const [activeTab, setActiveTab] = useState<"ALL" | "DINE_IN" | "TAKEAWAY" | "DELIVERY">("ALL");
+  const [activeTab, setActiveTab] = useState<"ALL" | "DINE_IN" | "TAKEAWAY" | "DELIVERY">(
+    "ALL",
+  );
 
   useEffect(() => {
     const timer = setInterval(() => setTick((value) => value + 1), 60_000);
@@ -82,7 +84,7 @@ export function KitchenDisplay({
         isFullyArmed={isFullyArmed}
         onEnableAlerts={() => void enableAll()}
       >
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+        <div className="scrollbar-hide flex items-center gap-2 overflow-x-auto">
           {TABS.map((tab) => {
             const count =
               tab === "ALL"
@@ -93,7 +95,7 @@ export function KitchenDisplay({
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition-colors ${
                   activeTab === tab
                     ? "bg-zinc-900 text-white"
                     : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
@@ -203,10 +205,10 @@ function Ticket({
     >
       <div className="flex items-start justify-between gap-2 border-b border-black/5 px-4 py-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+          <p className="text-xs font-bold tracking-wider text-zinc-500 uppercase">
             {order.type.replace("_", " ")}
           </p>
-          <h2 className="text-2xl font-bold leading-tight text-zinc-900">
+          <h2 className="text-2xl leading-tight font-bold text-zinc-900">
             #{order.orderNumber}
           </h2>
         </div>
@@ -256,7 +258,7 @@ function Ticket({
                 </span>
               )}
             </span>
-            <span className="shrink-0 text-sm tabular-nums text-zinc-500">
+            <span className="shrink-0 text-sm text-zinc-500 tabular-nums">
               {money(item.lineTotalCents)}
             </span>
           </li>
@@ -301,7 +303,9 @@ function Ticket({
           <button
             type="button"
             disabled={isPending}
-            onClick={() => run(() => staffAcceptOrderAction(order.id), { status: "ACCEPTED" })}
+            onClick={() =>
+              run(() => staffAcceptOrderAction(order.id), { status: "ACCEPTED" })
+            }
             className="flex-1 rounded-lg bg-white px-4 py-3 text-sm font-bold text-zinc-800 ring-1 ring-zinc-300 transition-colors hover:bg-zinc-50 disabled:opacity-50"
           >
             Start cooking

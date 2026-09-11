@@ -15,8 +15,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "QR Menu & Ordering",
     short_name: "QR Menu",
-    description:
-      "Take QR menu orders, run the kitchen display and work the floor.",
+    description: "Take QR menu orders, run the kitchen display and work the floor.",
     start_url: "/staff",
     // Standalone hides the address bar, so a propped-up tablet gains
     // the vertical space and cannot be navigated away from by accident.

@@ -123,9 +123,7 @@ export const stripeProvider: PaymentProvider = {
   async refund(params: RefundParams): Promise<RefundResult> {
     // providerRef is a Checkout Session id; the refund goes against the
     // PaymentIntent behind it.
-    const onAccount = params.accountId
-      ? { stripeAccount: params.accountId }
-      : undefined;
+    const onAccount = params.accountId ? { stripeAccount: params.accountId } : undefined;
     const session = await stripe().checkout.sessions.retrieve(
       params.providerRef,
       undefined,

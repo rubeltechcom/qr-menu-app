@@ -83,7 +83,10 @@ describe("payments", () => {
     await db.menu.deleteMany({});
     await db.location.deleteMany({});
     await rawPrisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantId);
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantId,
+      );
       await tx.membership.deleteMany({ where: { tenantId } });
       await tx.tenant.delete({ where: { id: tenantId } });
     });
@@ -161,7 +164,9 @@ describe("payments", () => {
     });
 
     const db = forTenant(tenantId);
-    expect((await db.payment.findFirst({ where: { id: payment.id } }))?.status).toBe("PAID");
+    expect((await db.payment.findFirst({ where: { id: payment.id } }))?.status).toBe(
+      "PAID",
+    );
     expect((await db.order.findFirst({ where: { id: order.id } }))?.paymentStatus).toBe(
       "PAID",
     );

@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSuperadmin } from "@/lib/require-superadmin";
-import {
-  listAllTenants,
-  statsForTenant,
-} from "@/modules/platform/platform.repository";
+import { listAllTenants, statsForTenant } from "@/modules/platform/platform.repository";
 import { effectivePlan, PLANS, type PlanId } from "@/modules/billing/plans";
 
 /** One restaurant, as the platform operator sees it. */
@@ -55,9 +52,7 @@ export default async function PlatformTenantPage({
       </p>
 
       <section className="mt-8">
-        <h2 className="text-lg font-medium text-zinc-900">
-          Subscription
-        </h2>
+        <h2 className="text-lg font-medium text-zinc-900">Subscription</h2>
         <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Field label="Plan on record" value={plan.name} />
           {/* The two can differ: a cancelled Pro is entitled to Free,
@@ -78,8 +73,8 @@ export default async function PlatformTenantPage({
         </dl>
         {entitled.id !== plan.id && (
           <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            This restaurant is on record as {plan.name} but its subscription is
-            not in good standing, so the app is enforcing {entitled.name} limits.
+            This restaurant is on record as {plan.name} but its subscription is not in
+            good standing, so the app is enforcing {entitled.name} limits.
           </p>
         )}
       </section>
@@ -124,8 +119,8 @@ export default async function PlatformTenantPage({
           />
         </dl>
         <p className="mt-3 text-xs text-zinc-500">
-          Revenue is what diners paid this restaurant through the platform. It
-          is their money, not ours — the platform fee on their plan is{" "}
+          Revenue is what diners paid this restaurant through the platform. It is their
+          money, not ours — the platform fee on their plan is{" "}
           {plan.platformFeeBps === 0 ? "nil" : `${plan.platformFeeBps / 100}%`}.
         </p>
       </section>
@@ -133,15 +128,7 @@ export default async function PlatformTenantPage({
   );
 }
 
-function Field({
-  label,
-  value,
-  warn,
-}: {
-  label: string;
-  value: string;
-  warn?: boolean;
-}) {
+function Field({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
     <div>
       <dt className="text-xs text-zinc-500">{label}</dt>

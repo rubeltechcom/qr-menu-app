@@ -16,7 +16,11 @@ export function listZones(db: TenantPrismaClient, locationId: string) {
   });
 }
 
-export function createZone(db: TenantPrismaClient, tenantId: string, input: CreateZoneInput) {
+export function createZone(
+  db: TenantPrismaClient,
+  tenantId: string,
+  input: CreateZoneInput,
+) {
   return db.zone.create({ data: { tenantId, ...input } });
 }
 
@@ -52,7 +56,13 @@ export async function createTable(
 export async function createTableRange(
   db: TenantPrismaClient,
   tenantId: string,
-  params: { locationId: string; zoneId?: string; from: number; to: number; prefix: string },
+  params: {
+    locationId: string;
+    zoneId?: string;
+    from: number;
+    to: number;
+    prefix: string;
+  },
 ): Promise<{ created: number; skipped: string[] }> {
   const skipped: string[] = [];
   let created = 0;
@@ -107,7 +117,9 @@ export function regeneratePublicCode(db: TenantPrismaClient, id: string) {
   );
 }
 
-async function withUniquePublicCode<T>(create: (publicCode: string) => Promise<T>): Promise<T> {
+async function withUniquePublicCode<T>(
+  create: (publicCode: string) => Promise<T>,
+): Promise<T> {
   const MAX_ATTEMPTS = 5;
   let lastError: unknown;
 

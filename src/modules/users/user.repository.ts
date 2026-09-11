@@ -16,7 +16,11 @@ export function findUserById(id: string) {
   return rawPrisma.user.findUnique({ where: { id } });
 }
 
-export function createUser(input: { name: string; email: string; hashedPassword: string }) {
+export function createUser(input: {
+  name: string;
+  email: string;
+  hashedPassword: string;
+}) {
   return rawPrisma.user.create({
     data: {
       name: input.name,

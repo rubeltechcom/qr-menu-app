@@ -69,9 +69,10 @@ export default async function TableLandingPage({
   // Every table in this location, for the dine-in picker. The QR code
   // still decides which table the order is filed against — this only lets
   // a diner say they have moved to a different one.
-  const tables = (await tableRepo.listTables(db, table.locationId)).map(
-    (candidate) => ({ id: candidate.id, label: candidate.label }),
-  );
+  const tables = (await tableRepo.listTables(db, table.locationId)).map((candidate) => ({
+    id: candidate.id,
+    label: candidate.label,
+  }));
 
   const menus = await menuRepo.listMenusForLocation(db, table.locationId);
   const menu = menus[0] ? await menuRepo.getMenuWithContent(db, menus[0].id) : null;

@@ -44,8 +44,8 @@ export default async function BillingPage({
 
       {checkout === "done" && (
         <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">
-          Payment received. Your plan updates as soon as Stripe confirms it —
-          usually within a few seconds.
+          Payment received. Your plan updates as soon as Stripe confirms it — usually
+          within a few seconds.
         </p>
       )}
       {checkout === "cancelled" && (
@@ -67,8 +67,8 @@ export default async function BillingPage({
 
         {tenant.subscriptionStatus === "PAST_DUE" && (
           <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            We could not take your last payment. Your plan keeps working for
-            now — update your card to avoid losing paid features.
+            We could not take your last payment. Your plan keeps working for now — update
+            your card to avoid losing paid features.
           </p>
         )}
 
@@ -98,14 +98,12 @@ export default async function BillingPage({
 
       {!configured && (
         <p className="mt-6 rounded-lg bg-zinc-100 px-4 py-3 text-sm text-zinc-700">
-          Billing is not configured on this installation, so plans cannot be
-          changed here yet.
+          Billing is not configured on this installation, so plans cannot be changed here
+          yet.
         </p>
       )}
 
-      <h2 className="mt-10 text-lg font-medium text-zinc-900">
-        Plans
-      </h2>
+      <h2 className="mt-10 text-lg font-medium text-zinc-900">Plans</h2>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         {PLAN_IDS.map((planId) => (
           <PlanCard
@@ -142,15 +140,12 @@ function PlanCard({
   const isCurrent = planId === currentPlanId;
   // A plan with no configured Stripe price cannot be bought, so say so
   // rather than showing a button that fails on click.
-  const purchasable =
-    planId !== "FREE" && Boolean(priceIdFor(planId, "monthly"));
+  const purchasable = planId !== "FREE" && Boolean(priceIdFor(planId, "monthly"));
 
   return (
     <div
       className={`rounded-xl border p-5 ${
-        isCurrent
-          ? "border-blue-500 bg-blue-50/40"
-          : "border-zinc-200"
+        isCurrent ? "border-blue-500 bg-blue-50/40" : "border-zinc-200"
       }`}
     >
       <p className="text-lg font-semibold text-zinc-900">{plan.name}</p>
@@ -178,17 +173,13 @@ function PlanCard({
 
       <div className="mt-5">
         {isCurrent ? (
-          <p className="text-sm font-medium text-blue-700">
-            Current plan
-          </p>
+          <p className="text-sm font-medium text-blue-700">Current plan</p>
         ) : planId === "FREE" ? (
           <p className="text-sm text-zinc-500">
             Cancel from the billing portal to return to Free.
           </p>
         ) : !purchasable ? (
-          <p className="text-sm text-zinc-500">
-            Not available on this installation.
-          </p>
+          <p className="text-sm text-zinc-500">Not available on this installation.</p>
         ) : canChange ? (
           <form
             action={startSubscriptionAction.bind(

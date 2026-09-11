@@ -153,7 +153,11 @@ export async function verifyAndRecord(paymentId: string): Promise<PaymentOutcome
 
   // Already resolved — nothing to ask, and nothing to write.
   if (payment.status === "PAID") {
-    return { status: "PAID", providerRef: payment.providerRef ?? "", amountCents: payment.amountCents };
+    return {
+      status: "PAID",
+      providerRef: payment.providerRef ?? "",
+      amountCents: payment.amountCents,
+    };
   }
   if (!payment.providerRef) return { status: "PENDING" };
 
@@ -270,10 +274,7 @@ export async function refundPayment(params: {
   if (!payment) throw new PaymentError("Payment not found.", "NOT_FOUND");
 
   if (payment.status !== "PAID" && payment.status !== "PARTIALLY_REFUNDED") {
-    throw new PaymentError(
-      "Only a paid order can be refunded.",
-      "NOT_REFUNDABLE",
-    );
+    throw new PaymentError("Only a paid order can be refunded.", "NOT_REFUNDABLE");
   }
   if (!payment.providerRef) {
     throw new PaymentError("That payment has no provider reference.", "NOT_REFUNDABLE");

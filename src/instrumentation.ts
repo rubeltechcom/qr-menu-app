@@ -20,7 +20,8 @@ export async function register() {
   const { loadSettings } = await import("@/modules/platform/settings.service");
   await loadSettings();
 
-  const { assertStorageWritable, describeStorage } = await import("@/modules/storage/registry");
+  const { assertStorageWritable, describeStorage } =
+    await import("@/modules/storage/registry");
 
   try {
     await assertStorageWritable();

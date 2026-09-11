@@ -180,7 +180,10 @@ export function withinLimit(
 }
 
 /** Platform fee on a diner order, in minor units. */
-export function platformFeeCents(tenant: TenantPlanState, orderTotalCents: number): number {
+export function platformFeeCents(
+  tenant: TenantPlanState,
+  orderTotalCents: number,
+): number {
   const bps = effectivePlan(tenant).platformFeeBps;
   if (bps === 0) return 0;
   // Integer maths throughout — rounding half up, so the platform never

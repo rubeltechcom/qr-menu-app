@@ -88,7 +88,10 @@ describe("orders", () => {
     await db.menu.deleteMany({});
     await db.location.deleteMany({});
     await rawPrisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantId);
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantId,
+      );
       await tx.membership.deleteMany({ where: { tenantId } });
       await tx.tenant.delete({ where: { id: tenantId } });
     });
@@ -98,7 +101,8 @@ describe("orders", () => {
 
   describe("staff transitions", () => {
     /** What a Server Action does: authenticate, then call the service. */
-    const asAction = <T>(fn: () => Promise<T>) => runWithTenant(tenantId, "order-test", fn);
+    const asAction = <T>(fn: () => Promise<T>) =>
+      runWithTenant(tenantId, "order-test", fn);
 
     async function freshOrder() {
       const { order } = await placeOrder({
@@ -235,7 +239,11 @@ describe("orders", () => {
       data: { tenantId: otherTenant.id, name: "Other Location" },
     });
     const otherMenu = await otherDb.menu.create({
-      data: { tenantId: otherTenant.id, locationId: otherLocation.id, name: "Other Menu" },
+      data: {
+        tenantId: otherTenant.id,
+        locationId: otherLocation.id,
+        name: "Other Menu",
+      },
     });
     const otherCategory = await otherDb.category.create({
       data: { tenantId: otherTenant.id, menuId: otherMenu.id, name: "Other" },

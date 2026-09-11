@@ -75,11 +75,17 @@ describe("tenant isolation", () => {
       await db.location.deleteMany({});
     }
     await rawPrisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantAId);
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantAId,
+      );
       await tx.tenant.delete({ where: { id: tenantAId } });
     });
     await rawPrisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantBId);
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantBId,
+      );
       await tx.tenant.delete({ where: { id: tenantBId } });
     });
     await rawPrisma.user.deleteMany({ where: { id: { in: [ownerAId, ownerBId] } } });
@@ -114,9 +120,7 @@ describe("tenant isolation", () => {
       }),
     ).rejects.toThrow();
 
-    await expect(
-      dbB.location.delete({ where: { id: location.id } }),
-    ).rejects.toThrow();
+    await expect(dbB.location.delete({ where: { id: location.id } })).rejects.toThrow();
 
     const stillThere = await dbA.location.findUnique({ where: { id: location.id } });
     expect(stillThere?.name).toBe("Joe's Pizza — Uptown");
@@ -134,7 +138,10 @@ describe("tenant isolation", () => {
     // wrapped in one $transaction so both share a connection — see the
     // CRITICAL comment in tenant-client.ts.
     const rows = await rawPrisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantBId);
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantBId,
+      );
       return tx.$queryRawUnsafe<Array<{ id: string }>>(
         `select id from locations where id = $1`,
         location.id,
@@ -146,7 +153,10 @@ describe("tenant isolation", () => {
     // the correct tenant, proving the empty result above is RLS denying
     // access — not, say, a typo in the query.
     const rowsForOwner = await rawPrisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantAId);
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantAId,
+      );
       return tx.$queryRawUnsafe<Array<{ id: string }>>(
         `select id from locations where id = $1`,
         location.id,

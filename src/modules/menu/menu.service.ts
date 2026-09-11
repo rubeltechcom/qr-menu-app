@@ -105,7 +105,11 @@ export async function updateCategory(id: string, input: unknown) {
   const updated = await repo.updateCategory(db, id, parsed);
 
   if (previous?.imageUrl) {
-    discardRemovedImages([previous.imageUrl], parsed.imageUrl ? [parsed.imageUrl] : [], tenantId);
+    discardRemovedImages(
+      [previous.imageUrl],
+      parsed.imageUrl ? [parsed.imageUrl] : [],
+      tenantId,
+    );
   }
   return updated;
 }

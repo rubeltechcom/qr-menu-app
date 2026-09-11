@@ -21,9 +21,7 @@ const optionalString = <T extends z.ZodType>(schema: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema.optional());
 
 const envSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "test", "production"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
   // --- App ---
   APP_URL: z.string().url().describe("Public base URL of the marketing site"),
@@ -62,9 +60,7 @@ const envSchema = z.object({
   BKASH_PASSWORD: optionalString(z.string().min(1)),
   // Defaults to sandbox: pointing at live money should be a deliberate
   // act, never something a missing variable does for you.
-  BKASH_SANDBOX: z
-    .preprocess((value) => value !== "false", z.boolean())
-    .default(true),
+  BKASH_SANDBOX: z.preprocess((value) => value !== "false", z.boolean()).default(true),
 
   // --- Object storage (S3-compatible) ---
   // Setting these switches uploads from local disk to S3. All of BUCKET,
@@ -85,7 +81,11 @@ const envSchema = z.object({
   UPLOAD_DIR: optionalString(z.string().min(1)),
   // Server-side hard cap in bytes. The client downscales well below this,
   // so hitting it means something is wrong rather than merely large.
-  UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(8 * 1024 * 1024),
+  UPLOAD_MAX_BYTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(8 * 1024 * 1024),
   // Optional absolute prefix (a CDN) for locally-stored files. Unset
   // means same-origin, which is what a single-server install wants.
   UPLOAD_PUBLIC_BASE: optionalString(z.string().url()),

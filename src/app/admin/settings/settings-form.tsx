@@ -110,7 +110,7 @@ function Field({ setting }: { setting: RenderedSetting }) {
         placeholder={setting.placeholder}
         autoComplete="off"
         spellCheck={false}
-        className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 font-mono text-sm text-zinc-900 outline-none transition-colors placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+        className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 font-mono text-sm text-zinc-900 transition-colors outline-none placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
       />
 
       <SourceNote setting={setting} />

@@ -38,10 +38,7 @@ export function sniffImageType(bytes: Uint8Array): ImageType | null {
   }
 
   // WebP: "RIFF" .... "WEBP".
-  if (
-    ascii(bytes, 0, 4) === "RIFF" &&
-    ascii(bytes, 8, 12) === "WEBP"
-  ) {
+  if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 12) === "WEBP") {
     return "webp";
   }
 
@@ -145,7 +142,11 @@ function readJpegDimensions(bytes: Uint8Array) {
 
     // SOFn carries the frame size. C4/C8/CC are not frame headers.
     const isStartOfFrame =
-      marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+      marker >= 0xc0 &&
+      marker <= 0xcf &&
+      marker !== 0xc4 &&
+      marker !== 0xc8 &&
+      marker !== 0xcc;
 
     if (isStartOfFrame) {
       return { height: view.getUint16(offset + 5), width: view.getUint16(offset + 7) };

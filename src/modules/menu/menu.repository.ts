@@ -41,7 +41,11 @@ export function getMenuWithContent(db: TenantPrismaClient, menuId: string) {
   });
 }
 
-export function createMenu(db: TenantPrismaClient, tenantId: string, input: CreateMenuInput) {
+export function createMenu(
+  db: TenantPrismaClient,
+  tenantId: string,
+  input: CreateMenuInput,
+) {
   return db.menu.create({ data: { tenantId, ...input } });
 }
 
@@ -69,7 +73,11 @@ export function createCategory(
   return db.category.create({ data: { tenantId, ...input } });
 }
 
-export function updateCategory(db: TenantPrismaClient, id: string, input: UpdateCategoryInput) {
+export function updateCategory(
+  db: TenantPrismaClient,
+  id: string,
+  input: UpdateCategoryInput,
+) {
   return db.category.update({ where: { id }, data: input });
 }
 
@@ -79,7 +87,9 @@ export function softDeleteCategory(db: TenantPrismaClient, id: string) {
 
 export function reorderCategories(db: TenantPrismaClient, ids: string[]) {
   return Promise.all(
-    ids.map((id, index) => db.category.update({ where: { id }, data: { sortOrder: index } })),
+    ids.map((id, index) =>
+      db.category.update({ where: { id }, data: { sortOrder: index } }),
+    ),
   );
 }
 
@@ -118,7 +128,11 @@ export function createMenuItem(
   });
 }
 
-export function updateMenuItem(db: TenantPrismaClient, id: string, input: UpdateMenuItemInput) {
+export function updateMenuItem(
+  db: TenantPrismaClient,
+  id: string,
+  input: UpdateMenuItemInput,
+) {
   return db.menuItem.update({ where: { id }, data: input });
 }
 
@@ -136,7 +150,9 @@ export function softDeleteMenuItem(db: TenantPrismaClient, id: string) {
 
 export function reorderMenuItems(db: TenantPrismaClient, ids: string[]) {
   return Promise.all(
-    ids.map((id, index) => db.menuItem.update({ where: { id }, data: { sortOrder: index } })),
+    ids.map((id, index) =>
+      db.menuItem.update({ where: { id }, data: { sortOrder: index } }),
+    ),
   );
 }
 

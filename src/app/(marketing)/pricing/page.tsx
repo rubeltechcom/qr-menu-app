@@ -19,8 +19,8 @@ export default function PricingPage() {
             Not sure which one you need?
           </h2>
           <p className="mt-3 text-zinc-600">
-            Start on Free. Nothing is deleted if you change plans later, and you
-            can move up or down whenever your service does.
+            Start on Free. Nothing is deleted if you change plans later, and you can move
+            up or down whenever your service does.
           </p>
           <Link
             href="/signup"

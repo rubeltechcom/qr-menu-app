@@ -30,7 +30,7 @@ export default async function StaffHomePage() {
   return (
     <div className="min-h-screen bg-zinc-50">
       <div className="mx-auto max-w-2xl px-6 py-16">
-        <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+        <p className="text-sm font-medium tracking-wide text-zinc-500 uppercase">
           {session.role.toLowerCase()}
         </p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-zinc-900">

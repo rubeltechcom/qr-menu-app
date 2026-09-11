@@ -102,7 +102,9 @@ function DishSheet({
       } catch (cause) {
         // A plan limit or a rejected image comes back as a thrown
         // Error; the owner needs to read it, not lose their typing.
-        setError(cause instanceof Error ? cause.message : "That didn't save. Please try again.");
+        setError(
+          cause instanceof Error ? cause.message : "That didn't save. Please try again.",
+        );
       }
     });
   };
@@ -208,7 +210,10 @@ function DishSheet({
           </div>
 
           {error && (
-            <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <p
+              role="alert"
+              className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
               {error}
             </p>
           )}

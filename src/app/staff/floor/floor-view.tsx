@@ -65,9 +65,7 @@ export function FloorView({
       <StaffHeader
         title="Floor"
         subtitle={
-          waitingCount > 0
-            ? `${waitingCount} ready to serve`
-            : `${tables.length} tables`
+          waitingCount > 0 ? `${waitingCount} ready to serve` : `${tables.length} tables`
         }
         connection={connection}
         isFullyArmed={isFullyArmed}
@@ -89,7 +87,7 @@ export function FloorView({
 
         {counterOrders.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+            <h2 className="text-sm font-semibold tracking-wide text-zinc-500 uppercase">
               Takeaway &amp; delivery
             </h2>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -148,10 +146,14 @@ function TableTile({
         disabled={orders.length === 0}
         className="w-full text-left disabled:cursor-default"
       >
-        <p className={`text-2xl font-bold ${orders.length === 0 ? "text-zinc-400" : "text-zinc-900"}`}>
+        <p
+          className={`text-2xl font-bold ${orders.length === 0 ? "text-zinc-400" : "text-zinc-900"}`}
+        >
           {label}
         </p>
-        <p className={`mt-0.5 text-sm ${orders.length === 0 ? "text-zinc-400" : "text-zinc-600"}`}>
+        <p
+          className={`mt-0.5 text-sm ${orders.length === 0 ? "text-zinc-400" : "text-zinc-600"}`}
+        >
           {orders.length === 0
             ? "Free"
             : `${orders.length} order${orders.length > 1 ? "s" : ""} · ${money(total)}`}
@@ -231,9 +233,7 @@ function CounterCard({
       {order.deliveryAddress && (
         <p className="mt-1 text-sm text-zinc-600">{order.deliveryAddress}</p>
       )}
-      <p className="mt-1 text-sm tabular-nums text-zinc-500">
-        {money(order.totalCents)}
-      </p>
+      <p className="mt-1 text-sm text-zinc-500 tabular-nums">{money(order.totalCents)}</p>
 
       {order.status === "READY" && (
         <button

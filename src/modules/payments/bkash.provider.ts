@@ -67,7 +67,9 @@ async function grantToken(): Promise<string> {
 
   const { appKey, appSecret, username, password } = credentials();
   if (!appKey || !appSecret || !username || !password) {
-    throw new Error("bKash is not configured. Add its credentials in the admin settings.");
+    throw new Error(
+      "bKash is not configured. Add its credentials in the admin settings.",
+    );
   }
 
   const response = await fetch(`${baseUrl()}/token/grant`, {

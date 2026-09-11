@@ -38,7 +38,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen flex-col bg-white">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2 font-bold tracking-tight text-zinc-900">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-bold tracking-tight text-zinc-900"
+          >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 text-sm text-white">
               QR
             </span>
@@ -79,7 +82,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <footer className="border-t border-zinc-200 bg-zinc-50">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-bold tracking-tight text-zinc-900">QR Menu &amp; Ordering</p>
+            <p className="font-bold tracking-tight text-zinc-900">
+              QR Menu &amp; Ordering
+            </p>
             <p className="mt-1 text-sm text-zinc-600">
               Digital menus and contactless ordering for restaurants.
             </p>

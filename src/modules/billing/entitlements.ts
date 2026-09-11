@@ -1,5 +1,10 @@
 import type { TenantPrismaClient } from "@/server/db/tenant-client";
-import { effectivePlan, withinLimit, type PlanLimits, type TenantPlanState } from "./plans";
+import {
+  effectivePlan,
+  withinLimit,
+  type PlanLimits,
+  type TenantPlanState,
+} from "./plans";
 
 /**
  * Enforcement of the plan limits defined in plans.ts.
@@ -21,7 +26,10 @@ export class PlanLimitError extends Error {
   }
 }
 
-type Countable = Extract<keyof PlanLimits, "locations" | "menuItems" | "tables" | "staffAccounts">;
+type Countable = Extract<
+  keyof PlanLimits,
+  "locations" | "menuItems" | "tables" | "staffAccounts"
+>;
 
 async function currentCount(db: TenantPrismaClient, limit: Countable): Promise<number> {
   switch (limit) {

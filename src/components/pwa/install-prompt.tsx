@@ -120,7 +120,7 @@ export function InstallPrompt() {
         type="button"
         onClick={dismiss}
         aria-label="Dismiss"
-        className="-mr-1 -mt-1 rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+        className="-mt-1 -mr-1 rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
       >
         <X className="h-4 w-4" />
       </button>

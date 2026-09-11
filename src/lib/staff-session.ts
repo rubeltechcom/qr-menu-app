@@ -26,7 +26,9 @@ function secretKey() {
   return new TextEncoder().encode(env.AUTH_SECRET);
 }
 
-export async function createStaffSessionToken(payload: StaffSessionPayload): Promise<string> {
+export async function createStaffSessionToken(
+  payload: StaffSessionPayload,
+): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -34,7 +36,9 @@ export async function createStaffSessionToken(payload: StaffSessionPayload): Pro
     .sign(secretKey());
 }
 
-export async function verifyStaffSessionToken(token: string): Promise<StaffSessionPayload | null> {
+export async function verifyStaffSessionToken(
+  token: string,
+): Promise<StaffSessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, secretKey());
     if (

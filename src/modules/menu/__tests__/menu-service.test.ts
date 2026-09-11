@@ -56,8 +56,7 @@ describe("menu service", () => {
   });
 
   /** What a Server Action does: authenticate, then call the service. */
-  const asAction = <T>(fn: () => Promise<T>) =>
-    runWithTenant(tenantId, "menu-test", fn);
+  const asAction = <T>(fn: () => Promise<T>) => runWithTenant(tenantId, "menu-test", fn);
 
   it("refuses to run outside a tenant context rather than querying unscoped", async () => {
     await expect(

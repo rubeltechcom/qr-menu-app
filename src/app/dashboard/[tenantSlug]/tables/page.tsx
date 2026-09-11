@@ -3,7 +3,11 @@ import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
 import * as locationRepo from "@/modules/locations/location.repository";
 import * as tableRepo from "@/modules/tables/table.repository";
 import { tableQrSvg, tableStorefrontUrl } from "@/modules/tables/qr";
-import { createLocationAction, createTableAction, createTableRangeAction } from "./actions";
+import {
+  createLocationAction,
+  createTableAction,
+  createTableRangeAction,
+} from "./actions";
 import { DeleteTableButton, RegenerateCodeButton } from "./table-controls";
 
 export default async function TablesPage({
@@ -19,13 +23,14 @@ export default async function TablesPage({
   if (locations.length === 0) {
     return (
       <div className="mx-auto max-w-lg px-6 py-16">
-        <h1 className="text-xl font-semibold text-zinc-900">
-          Add your first location
-        </h1>
+        <h1 className="text-xl font-semibold text-zinc-900">Add your first location</h1>
         <p className="mt-2 text-sm text-zinc-600">
           Tables belong to a location — add one to start printing QR codes.
         </p>
-        <form action={createLocationAction.bind(null, tenantSlug)} className="mt-6 flex flex-col gap-3">
+        <form
+          action={createLocationAction.bind(null, tenantSlug)}
+          className="mt-6 flex flex-col gap-3"
+        >
           <input
             name="name"
             placeholder="Location name (e.g. Main St)"
@@ -111,7 +116,13 @@ export default async function TablesPage({
  * the empty state leads with the range form — adding them one at a time is
  * the kind of friction that loses a signup before the first order.
  */
-function EmptyState({ tenantSlug, locationId }: { tenantSlug: string; locationId: string }) {
+function EmptyState({
+  tenantSlug,
+  locationId,
+}: {
+  tenantSlug: string;
+  locationId: string;
+}) {
   return (
     <div className="mt-8 rounded-xl border border-zinc-200 p-6">
       <h2 className="font-medium text-zinc-900">Add your tables</h2>
@@ -186,8 +197,16 @@ async function TableCard({
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <RegenerateCodeButton tenantSlug={tenantSlug} tableId={table.id} label={table.label} />
-          <DeleteTableButton tenantSlug={tenantSlug} tableId={table.id} label={table.label} />
+          <RegenerateCodeButton
+            tenantSlug={tenantSlug}
+            tableId={table.id}
+            label={table.label}
+          />
+          <DeleteTableButton
+            tenantSlug={tenantSlug}
+            tableId={table.id}
+            label={table.label}
+          />
         </div>
       </div>
 

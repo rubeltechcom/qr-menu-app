@@ -42,7 +42,9 @@ const TENANT_SCOPED_MODELS = [
 
 export function forTenant(tenantId: string) {
   if (!tenantId) {
-    throw new Error("forTenant() called without a tenantId — refusing to build an unscoped client.");
+    throw new Error(
+      "forTenant() called without a tenantId — refusing to build an unscoped client.",
+    );
   }
 
   return rawPrisma.$extends({
@@ -51,7 +53,8 @@ export function forTenant(tenantId: string) {
       $allModels: {
         async $allOperations({ model, operation, args }) {
           const isScopedModel =
-            model && TENANT_SCOPED_MODELS.includes(model as (typeof TENANT_SCOPED_MODELS)[number]);
+            model &&
+            TENANT_SCOPED_MODELS.includes(model as (typeof TENANT_SCOPED_MODELS)[number]);
           const scopeField = model === "Tenant" ? "id" : "tenantId";
           const effectiveOperation = isScopedModel
             ? rewriteOperation(operation)

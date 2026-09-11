@@ -208,7 +208,9 @@ export const SETTING_GROUPS: SettingGroup[] = [
 
 /** Flat lookup, for validating a submitted key. */
 export const SETTING_BY_KEY = new Map<string, SettingDefinition>(
-  SETTING_GROUPS.flatMap((group) => group.settings.map((setting) => [setting.key, setting])),
+  SETTING_GROUPS.flatMap((group) =>
+    group.settings.map((setting) => [setting.key, setting]),
+  ),
 );
 
 /** Defaults applied when neither the database nor the environment has a value. */

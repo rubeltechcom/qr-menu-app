@@ -49,7 +49,10 @@ describe("plan limit enforcement", () => {
     await db.table.deleteMany({});
     await db.location.deleteMany({});
     await rawPrisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantId);
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantId,
+      );
       await tx.membership.deleteMany({ where: { tenantId } });
       await tx.tenant.delete({ where: { id: tenantId } });
     });
@@ -92,9 +95,7 @@ describe("plan limit enforcement", () => {
     const db = forTenant(tenantId);
     // 10 already exist from the test above; asking for 5 more must fail
     // up front rather than creating some and stopping.
-    await expect(assertCanCreate(db, free, "tables", 5)).rejects.toThrow(
-      /would exceed/i,
-    );
+    await expect(assertCanCreate(db, free, "tables", 5)).rejects.toThrow(/would exceed/i);
     expect(await db.table.count({ where: { deletedAt: null } })).toBe(10);
   });
 

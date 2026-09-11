@@ -1,5 +1,8 @@
 import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
-import { isConnectConfigured, refreshConnectStatus } from "@/modules/billing/connect.service";
+import {
+  isConnectConfigured,
+  refreshConnectStatus,
+} from "@/modules/billing/connect.service";
 import { availableProviders } from "@/modules/payments/registry";
 import { effectivePlan } from "@/modules/billing/plans";
 import {
@@ -61,14 +64,10 @@ export default async function PaymentsSettingsPage({
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-        Payments
-      </h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Payments</h1>
 
       <section className="mt-6">
-        <h2 className="text-lg font-medium text-zinc-900">
-          How diners pay
-        </h2>
+        <h2 className="text-lg font-medium text-zinc-900">How diners pay</h2>
         <div className="mt-3 flex flex-col gap-3">
           {MODES.map((mode) => {
             const isCurrent = tenant.paymentMode === mode.value;
@@ -77,19 +76,13 @@ export default async function PaymentsSettingsPage({
                 key={mode.value}
                 action={setPaymentModeAction.bind(null, tenantSlug)}
                 className={`flex items-center justify-between gap-4 rounded-xl border p-4 ${
-                  isCurrent
-                    ? "border-blue-500 bg-blue-50/40"
-                    : "border-zinc-200"
+                  isCurrent ? "border-blue-500 bg-blue-50/40" : "border-zinc-200"
                 }`}
               >
                 <input type="hidden" name="mode" value={mode.value} />
                 <div>
-                  <p className="font-medium text-zinc-900">
-                    {mode.title}
-                  </p>
-                  <p className="mt-0.5 text-sm text-zinc-600">
-                    {mode.detail}
-                  </p>
+                  <p className="font-medium text-zinc-900">{mode.title}</p>
+                  <p className="mt-0.5 text-sm text-zinc-600">{mode.detail}</p>
                 </div>
                 {isCurrent ? (
                   <span className="shrink-0 text-sm font-medium text-blue-700">
@@ -111,14 +104,12 @@ export default async function PaymentsSettingsPage({
 
       {tenant.paymentMode !== "COUNTER" && (
         <section className="mt-10">
-          <h2 className="text-lg font-medium text-zinc-900">
-            Payment methods
-          </h2>
+          <h2 className="text-lg font-medium text-zinc-900">Payment methods</h2>
 
           {providers.length === 0 ? (
             <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              No payment provider is configured on this installation yet, so
-              diners cannot pay online even though the mode above allows it.
+              No payment provider is configured on this installation yet, so diners cannot
+              pay online even though the mode above allows it.
             </p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2">
@@ -146,22 +137,21 @@ export default async function PaymentsSettingsPage({
 
       {connectConfigured && (
         <section className="mt-10 rounded-xl border border-zinc-200 p-5">
-          <h2 className="text-lg font-medium text-zinc-900">
-            Card payments (Stripe)
-          </h2>
+          <h2 className="text-lg font-medium text-zinc-900">Card payments (Stripe)</h2>
           <p className="mt-1 text-sm text-zinc-600">
-            Card payments go straight to your own Stripe account. We never hold
-            your money.
+            Card payments go straight to your own Stripe account. We never hold your
+            money.
             {plan.platformFeeBps > 0 && (
-              <> A {plan.platformFeeBps / 100}% platform fee applies on your current plan.</>
+              <>
+                {" "}
+                A {plan.platformFeeBps / 100}% platform fee applies on your current plan.
+              </>
             )}
           </p>
 
           <p className="mt-3 text-sm font-medium">
             {chargesEnabled ? (
-              <span className="text-green-700">
-                Connected and able to take payments
-              </span>
+              <span className="text-green-700">Connected and able to take payments</span>
             ) : tenant.connectAccountId ? (
               <span className="text-amber-700">
                 Started, but Stripe has not enabled payments yet

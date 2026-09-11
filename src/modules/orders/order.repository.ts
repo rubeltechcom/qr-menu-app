@@ -117,7 +117,9 @@ export function getOrderByTrackToken(db: TenantPrismaClient, trackToken: string)
  * It is safe because the token is 128 bits of CSPRNG output: unguessable,
  * single-purpose, and it leaks no data on its own.
  */
-export async function resolveTenantByTrackToken(trackToken: string): Promise<string | null> {
+export async function resolveTenantByTrackToken(
+  trackToken: string,
+): Promise<string | null> {
   const rows = await rawPrisma.$queryRaw<Array<{ tenantId: string }>>`
     SELECT "tenantId" FROM "orders" WHERE "trackToken" = ${trackToken} LIMIT 1
   `;

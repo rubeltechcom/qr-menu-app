@@ -6,7 +6,11 @@ import * as menuRepo from "@/modules/menu/menu.repository";
 import { createLocationAction, createMenuAction } from "./actions";
 import { AddCategoryButton, EditCategoryButton } from "./category-editor";
 import { DishEditor } from "./dish-editor";
-import { ItemAvailabilityToggle, DeleteItemButton, DuplicateItemButton } from "./item-controls";
+import {
+  ItemAvailabilityToggle,
+  DeleteItemButton,
+  DuplicateItemButton,
+} from "./item-controls";
 
 /**
  * The menu builder.
@@ -120,7 +124,8 @@ async function MenuSection({
   // Falls back to the first category, so the page is never a blank
   // frame waiting for a click.
   const active =
-    menu.categories.find((candidate) => candidate.id === openCategoryId) ?? menu.categories[0];
+    menu.categories.find((candidate) => candidate.id === openCategoryId) ??
+    menu.categories[0];
 
   return (
     <section className="mt-8">
@@ -191,7 +196,7 @@ async function MenuSection({
                   </div>
                 )}
 
-                <div className="absolute left-2 top-2">
+                <div className="absolute top-2 left-2">
                   <ItemAvailabilityToggle
                     tenantSlug={tenantSlug}
                     itemId={item.id}
@@ -199,7 +204,7 @@ async function MenuSection({
                   />
                 </div>
 
-                <div className="absolute right-2 top-2">
+                <div className="absolute top-2 right-2">
                   <DishEditor
                     tenantSlug={tenantSlug}
                     categoryId={active.id}
@@ -217,7 +222,7 @@ async function MenuSection({
               </div>
 
               <div className="flex flex-1 flex-col p-3">
-                <h3 className="truncate text-sm font-semibold lowercase text-zinc-900">
+                <h3 className="truncate text-sm font-semibold text-zinc-900 lowercase">
                   {item.name}
                 </h3>
                 <div className="mt-1 flex items-center justify-between">
@@ -245,8 +250,8 @@ function FirstLocationForm({ tenantSlug }: { tenantSlug: string }) {
         Where are you serving?
       </h1>
       <p className="mt-2 text-zinc-600">
-        A menu belongs to a location. The timezone decides when a day&rsquo;s
-        order numbers roll over, and the currency is what your guests see.
+        A menu belongs to a location. The timezone decides when a day&rsquo;s order
+        numbers roll over, and the currency is what your guests see.
       </p>
 
       <form
@@ -327,13 +332,18 @@ function FirstLocationForm({ tenantSlug }: { tenantSlug: string }) {
   );
 }
 
-function FirstMenuForm({ tenantSlug, locationId }: { tenantSlug: string; locationId: string }) {
+function FirstMenuForm({
+  tenantSlug,
+  locationId,
+}: {
+  tenantSlug: string;
+  locationId: string;
+}) {
   return (
     <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 p-10 text-center">
       <h2 className="text-lg font-semibold text-zinc-900">Create your menu</h2>
       <p className="mx-auto mt-1 max-w-sm text-sm text-zinc-600">
-        Most restaurants need only one. Give it a name and start adding
-        categories.
+        Most restaurants need only one. Give it a name and start adding categories.
       </p>
 
       <form

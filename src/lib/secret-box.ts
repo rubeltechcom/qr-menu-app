@@ -60,11 +60,7 @@ export function decryptSecret(value: string): string | null {
     const [ivPart, tagPart, dataPart] = value.slice(PREFIX.length).split(".");
     if (!ivPart || !tagPart || !dataPart) return null;
 
-    const decipher = createDecipheriv(
-      ALGORITHM,
-      key(),
-      Buffer.from(ivPart, "base64url"),
-    );
+    const decipher = createDecipheriv(ALGORITHM, key(), Buffer.from(ivPart, "base64url"));
     decipher.setAuthTag(Buffer.from(tagPart, "base64url"));
 
     return Buffer.concat([

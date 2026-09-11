@@ -20,8 +20,8 @@ export default function OfflinePage() {
         No connection
       </h1>
       <p className="mt-2 max-w-sm text-zinc-600">
-        This device is offline. Orders already on screen are still there —
-        new ones will arrive as soon as the connection is back.
+        This device is offline. Orders already on screen are still there — new ones will
+        arrive as soon as the connection is back.
       </p>
       <p className="mt-6 text-sm text-zinc-500">
         Check the restaurant&rsquo;s wifi, then try again.

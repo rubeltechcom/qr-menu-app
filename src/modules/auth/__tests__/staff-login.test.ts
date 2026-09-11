@@ -2,7 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { rawPrisma } from "@/server/db/client";
 import { createTenantRecord } from "@/modules/tenants/tenant.repository";
 import { setStaffPin, verifyStaffPin } from "../staff-pin.service";
-import { findTenantForStaffLogin, listStaffPinsForTenant } from "../staff-login.repository";
+import {
+  findTenantForStaffLogin,
+  listStaffPinsForTenant,
+} from "../staff-login.repository";
 
 /**
  * Staff PIN login, against the real database — because the thing that
@@ -46,7 +49,10 @@ describe("staff login", () => {
     // Writing a membership needs the tenant context RLS expects — the
     // same isolation that makes the staff-login window necessary.
     const membership = await rawPrisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantId);
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantId,
+      );
       return tx.membership.create({
         data: { tenantId, userId: cook.id, role: "KITCHEN" },
       });

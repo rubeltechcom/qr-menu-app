@@ -67,9 +67,7 @@ export function useCart(publicCode: string) {
       setLines((current) =>
         quantity <= 0
           ? current.filter((line) => line.id !== id)
-          : current.map((line) =>
-              line.id === id ? { ...line, quantity } : line,
-            ),
+          : current.map((line) => (line.id === id ? { ...line, quantity } : line)),
       );
     },
     [setLines],

@@ -18,11 +18,17 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 const STATUS_COPY = {
-  PENDING: { title: "Sent to the kitchen", detail: "Waiting for the kitchen to accept it." },
+  PENDING: {
+    title: "Sent to the kitchen",
+    detail: "Waiting for the kitchen to accept it.",
+  },
   ACCEPTED: { title: "Being prepared", detail: "The kitchen is working on your order." },
   READY: { title: "Ready", detail: "Your order is ready." },
   COMPLETED: { title: "Served", detail: "Enjoy your meal." },
-  REJECTED: { title: "Not accepted", detail: "The restaurant could not take this order." },
+  REJECTED: {
+    title: "Not accepted",
+    detail: "The restaurant could not take this order.",
+  },
 } as const;
 
 export default async function TrackOrderPage({
@@ -67,7 +73,7 @@ export default async function TrackOrderPage({
             <span className="text-zinc-800">
               {item.quantity} × {item.nameSnapshot}
             </span>
-            <span className="shrink-0 tabular-nums text-zinc-600">
+            <span className="shrink-0 text-zinc-600 tabular-nums">
               {(item.lineTotalCents / 100).toFixed(2)}
             </span>
           </li>

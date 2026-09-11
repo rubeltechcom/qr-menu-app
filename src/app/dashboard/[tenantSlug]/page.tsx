@@ -50,9 +50,21 @@ export default async function TenantOverviewPage({
 
   // The three things that must exist before a guest can order anything.
   const setup = [
-    { label: "Add your location", done: Boolean(location), href: `/dashboard/${tenantSlug}/menu` },
-    { label: "Build your menu", done: dishCount > 0, href: `/dashboard/${tenantSlug}/menu` },
-    { label: "Print your table QR codes", done: tableCount > 0, href: `/dashboard/${tenantSlug}/tables` },
+    {
+      label: "Add your location",
+      done: Boolean(location),
+      href: `/dashboard/${tenantSlug}/menu`,
+    },
+    {
+      label: "Build your menu",
+      done: dishCount > 0,
+      href: `/dashboard/${tenantSlug}/menu`,
+    },
+    {
+      label: "Print your table QR codes",
+      done: tableCount > 0,
+      href: `/dashboard/${tenantSlug}/tables`,
+    },
   ];
   const remaining = setup.filter((step) => !step.done);
 
@@ -105,7 +117,9 @@ export default async function TenantOverviewPage({
     <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-900">{tenant.name}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-900">
+            {tenant.name}
+          </h2>
           <p className="mt-1 text-sm text-zinc-500">
             {location ? location.name : "No location yet"} · {plan.name} plan ·{" "}
             {membership.role.toLowerCase()}
@@ -128,8 +142,8 @@ export default async function TenantOverviewPage({
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-6">
           <h3 className="font-medium text-amber-900">Finish setting up</h3>
           <p className="mt-1 text-sm text-amber-800">
-            {remaining.length} {remaining.length === 1 ? "step" : "steps"} left before guests can
-            order.
+            {remaining.length} {remaining.length === 1 ? "step" : "steps"} left before
+            guests can order.
           </p>
           <ol className="mt-4 flex flex-col gap-2">
             {setup.map((step) => (
@@ -137,12 +151,16 @@ export default async function TenantOverviewPage({
                 <Link
                   href={step.href}
                   className={`flex items-center gap-2.5 text-sm ${
-                    step.done ? "text-amber-700 line-through" : "font-medium text-amber-900 hover:underline"
+                    step.done
+                      ? "text-amber-700 line-through"
+                      : "font-medium text-amber-900 hover:underline"
                   }`}
                 >
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs ${
-                      step.done ? "bg-amber-200 text-amber-800" : "border border-amber-400"
+                      step.done
+                        ? "bg-amber-200 text-amber-800"
+                        : "border border-amber-400"
                     }`}
                   >
                     {step.done ? "✓" : ""}
@@ -156,7 +174,9 @@ export default async function TenantOverviewPage({
       )}
 
       <section>
-        <h3 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Manage</h3>
+        <h3 className="text-sm font-medium tracking-wide text-zinc-500 uppercase">
+          Manage
+        </h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sections.map((section) => (
             <Link

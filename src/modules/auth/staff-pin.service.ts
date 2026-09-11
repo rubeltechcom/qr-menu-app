@@ -45,7 +45,10 @@ export interface StaffLoginResult {
  * for tenant A tells you nothing usable about tenant B even by
  * coincidence of PIN reuse.
  */
-export async function verifyStaffPin(tenantId: string, pin: string): Promise<StaffLoginResult | null> {
+export async function verifyStaffPin(
+  tenantId: string,
+  pin: string,
+): Promise<StaffLoginResult | null> {
   if (!PIN_PATTERN.test(pin)) return null;
 
   // Read through the staff-login window: "memberships" is RLS-protected

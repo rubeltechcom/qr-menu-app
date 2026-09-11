@@ -3,10 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
 import { runWithTenant } from "@/server/tenant-context";
-import {
-  recordCounterPayment,
-  refundPayment,
-} from "@/modules/payments/payment.service";
+import { recordCounterPayment, refundPayment } from "@/modules/payments/payment.service";
 
 /**
  * Payment actions available from the order board.

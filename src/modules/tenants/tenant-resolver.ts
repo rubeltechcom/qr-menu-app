@@ -16,7 +16,10 @@ import { RESERVED_SUBDOMAINS } from "@/proxy";
  * minimal, non-sensitive projection (id + slug), not general tenant
  * data access.
  */
-export async function resolveTenantFromRequest(): Promise<{ id: string; slug: string } | null> {
+export async function resolveTenantFromRequest(): Promise<{
+  id: string;
+  slug: string;
+} | null> {
   const hostname = (await headers()).get("x-tenant-hostname");
   if (!hostname) return null;
 
@@ -33,7 +36,11 @@ export async function resolveTenantFromRequest(): Promise<{ id: string; slug: st
     return null;
   }
   const candidateSlug = hostname.slice(0, -(rootDomain.length + 1));
-  if (!candidateSlug || candidateSlug.includes(".") || RESERVED_SUBDOMAINS.has(candidateSlug)) {
+  if (
+    !candidateSlug ||
+    candidateSlug.includes(".") ||
+    RESERVED_SUBDOMAINS.has(candidateSlug)
+  ) {
     return null;
   }
 

@@ -14,10 +14,13 @@ export const createMenuSchema = z.object({
 });
 export type CreateMenuInput = z.infer<typeof createMenuSchema>;
 
-export const updateMenuSchema = createMenuSchema.partial().omit({ locationId: true }).extend({
-  isActive: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
-});
+export const updateMenuSchema = createMenuSchema
+  .partial()
+  .omit({ locationId: true })
+  .extend({
+    isActive: z.boolean().optional(),
+    sortOrder: z.number().int().optional(),
+  });
 export type UpdateMenuInput = z.infer<typeof updateMenuSchema>;
 
 /**
@@ -53,9 +56,12 @@ export const createCategorySchema = z.object({
 });
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 
-export const updateCategorySchema = createCategorySchema.partial().omit({ menuId: true }).extend({
-  sortOrder: z.number().int().optional(),
-});
+export const updateCategorySchema = createCategorySchema
+  .partial()
+  .omit({ menuId: true })
+  .extend({
+    sortOrder: z.number().int().optional(),
+  });
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 
 export const modifierInputSchema = z.object({

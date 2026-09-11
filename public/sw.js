@@ -70,7 +70,10 @@ self.addEventListener("fetch", (event) => {
         const cached = await caches.match(OFFLINE_URL);
         return (
           cached ??
-          new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } })
+          new Response("Offline", {
+            status: 503,
+            headers: { "Content-Type": "text/plain" },
+          })
         );
       }),
     );

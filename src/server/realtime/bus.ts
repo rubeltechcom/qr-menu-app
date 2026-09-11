@@ -119,7 +119,11 @@ function getSubscriber(): Redis | null {
  * instance never depends on a Redis round-trip) and to Redis for other
  * instances, de-duplicated by the publisher tag on the payload.
  */
-export async function publish(channel: string, event: string, data: unknown): Promise<void> {
+export async function publish(
+  channel: string,
+  event: string,
+  data: unknown,
+): Promise<void> {
   const message: RealtimeMessage = { seq: nextSeq(channel), event, data };
 
   // Local first: this is the path that must never fail.

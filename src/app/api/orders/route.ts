@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
       // inline next to the offending field rather than in a modal.
       const first = error.issues[0];
       return Response.json(
-        { error: first?.message ?? "Please check the form.", field: first?.path.join(".") },
+        {
+          error: first?.message ?? "Please check the form.",
+          field: first?.path.join("."),
+        },
         { status: 400 },
       );
     }

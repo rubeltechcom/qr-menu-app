@@ -64,7 +64,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
     ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-      ? [Google({ clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET })]
+      ? [
+          Google({
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
       : []),
   ],
   callbacks: {

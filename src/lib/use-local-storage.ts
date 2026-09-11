@@ -70,9 +70,7 @@ export function useLocalStorageState<T>(
   const setValue = useCallback(
     (next: T | ((current: T) => T)) => {
       const resolved =
-        typeof next === "function"
-          ? (next as (current: T) => T)(getSnapshot())
-          : next;
+        typeof next === "function" ? (next as (current: T) => T)(getSnapshot()) : next;
       try {
         localStorage.setItem(key, JSON.stringify(resolved));
       } catch {

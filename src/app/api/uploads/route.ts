@@ -47,7 +47,10 @@ export async function POST(request: NextRequest) {
   // user's session cookie straight into this endpoint.
   const origin = request.headers.get("origin");
   if (origin && origin !== request.nextUrl.origin) {
-    return Response.json({ error: "Cross-origin uploads are not allowed." }, { status: 403 });
+    return Response.json(
+      { error: "Cross-origin uploads are not allowed." },
+      { status: 403 },
+    );
   }
 
   const kindParam = request.nextUrl.searchParams.get("kind") ?? "menuItem";
@@ -69,7 +72,10 @@ export async function POST(request: NextRequest) {
     // errors, which would surface to fetch() as an opaque 500. A JSON
     // 403 is what the uploader can actually show the owner.
     if (isNavigationError(error)) {
-      return Response.json({ error: "You can't upload to this restaurant." }, { status: 403 });
+      return Response.json(
+        { error: "You can't upload to this restaurant." },
+        { status: 403 },
+      );
     }
     throw error;
   }
@@ -90,7 +96,10 @@ export async function POST(request: NextRequest) {
   const declaredLength = Number(request.headers.get("content-length") ?? 0);
   if (declaredLength > ceiling * 1.1) {
     const limitMb = Math.floor(ceiling / (1024 * 1024));
-    return Response.json({ error: `That file is larger than ${limitMb}MB.` }, { status: 413 });
+    return Response.json(
+      { error: `That file is larger than ${limitMb}MB.` },
+      { status: 413 },
+    );
   }
 
   let file: File | null;
@@ -121,7 +130,10 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof UploadError) {
-      return Response.json({ error: error.message, code: error.code }, { status: STATUS[error.code] });
+      return Response.json(
+        { error: error.message, code: error.code },
+        { status: STATUS[error.code] },
+      );
     }
     console.error("[uploads] unexpected failure", error);
     return Response.json({ error: "We couldn't save that image." }, { status: 500 });

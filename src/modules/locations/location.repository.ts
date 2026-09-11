@@ -27,7 +27,11 @@ export function createLocation(
   });
 }
 
-export function updateLocation(db: TenantPrismaClient, id: string, input: UpdateLocationInput) {
+export function updateLocation(
+  db: TenantPrismaClient,
+  id: string,
+  input: UpdateLocationInput,
+) {
   return db.location.update({ where: { id }, data: input });
 }
 

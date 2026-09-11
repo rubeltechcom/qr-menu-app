@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildKey,
-  isSafeKey,
-  keyBelongsToTenant,
-  keyFromUrl,
-  parseKey,
-} from "../key";
+import { buildKey, isSafeKey, keyBelongsToTenant, keyFromUrl, parseKey } from "../key";
 
 /**
  * Storage keys decide where a file lands on disk and which restaurant it
@@ -125,7 +119,9 @@ describe("keyFromUrl", () => {
   });
 
   it("recovers the key from a configured absolute base", () => {
-    expect(keyFromUrl(`https://cdn.example.com/${key}`, ["https://cdn.example.com"])).toBe(key);
+    expect(
+      keyFromUrl(`https://cdn.example.com/${key}`, ["https://cdn.example.com"]),
+    ).toBe(key);
   });
 
   it.each([

@@ -40,7 +40,9 @@ function benefits(plan: Plan): string[] {
       : `Up to ${limits.menuItems} menu items`,
   );
   lines.push(
-    limits.tables === null ? "Unlimited tables & QR codes" : `Up to ${limits.tables} table QR codes`,
+    limits.tables === null
+      ? "Unlimited tables & QR codes"
+      : `Up to ${limits.tables} table QR codes`,
   );
   lines.push(
     limits.staffAccounts === null
@@ -77,8 +79,8 @@ export function Pricing({ id = "pricing" }: { id?: string }) {
           Start free. Upgrade when it pays for itself.
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-600">
-          Every plan includes the QR menu, the ordering system and the kitchen
-          display. No setup fee, and no card needed to start.
+          Every plan includes the QR menu, the ordering system and the kitchen display. No
+          setup fee, and no card needed to start.
         </p>
       </div>
 
@@ -100,7 +102,9 @@ export function Pricing({ id = "pricing" }: { id?: string }) {
             >
               {option.label}
               {option.value && (
-                <span className="ml-1.5 text-xs font-medium opacity-80">2 months free</span>
+                <span className="ml-1.5 text-xs font-medium opacity-80">
+                  2 months free
+                </span>
               )}
             </button>
           ))}
@@ -149,12 +153,17 @@ export function Pricing({ id = "pricing" }: { id?: string }) {
                     : "border border-zinc-300 text-zinc-900 hover:bg-zinc-50"
                 }`}
               >
-                {plan.monthlyPriceCents === null ? "Create free menu" : `Choose ${plan.name}`}
+                {plan.monthlyPriceCents === null
+                  ? "Create free menu"
+                  : `Choose ${plan.name}`}
               </Link>
 
               <ul className="mt-8 flex flex-col gap-3">
                 {benefits(plan).map((benefit) => (
-                  <li key={benefit} className="flex items-start gap-2.5 text-sm text-zinc-700">
+                  <li
+                    key={benefit}
+                    className="flex items-start gap-2.5 text-sm text-zinc-700"
+                  >
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                     <span>{benefit}</span>
                   </li>

@@ -73,9 +73,7 @@ export function OrderBoard({
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-          Orders
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Orders</h1>
         <ConnectionBadge state={connection} />
       </header>
 
@@ -122,9 +120,7 @@ export function OrderBoard({
       </div>
 
       {visible.length === 0 ? (
-        <p className="mt-16 text-center text-lg text-zinc-500">
-          No Orders
-        </p>
+        <p className="mt-16 text-center text-lg text-zinc-500">No Orders</p>
       ) : (
         <div className="mt-6 flex flex-col gap-4">
           {visible.map((order) => (
@@ -177,10 +173,7 @@ function OrderCard({
   const [error, setError] = useState<string | null>(null);
   const isResolved = RESOLVED.includes(order.status);
 
-  const run = (
-    action: () => Promise<void>,
-    optimistic: Partial<SerializedOrder>,
-  ) => {
+  const run = (action: () => Promise<void>, optimistic: Partial<SerializedOrder>) => {
     setError(null);
     onOptimistic(order.id, optimistic);
     startTransition(() => {
@@ -203,9 +196,7 @@ function OrderCard({
   return (
     <article
       className={`rounded-xl border p-4 transition-opacity ${
-        isResolved
-          ? "border-zinc-200 opacity-60"
-          : "border-zinc-300"
+        isResolved ? "border-zinc-200 opacity-60" : "border-zinc-300"
       } ${isPending ? "opacity-50" : ""}`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -228,9 +219,7 @@ function OrderCard({
           <li key={item.id} className="flex justify-between gap-4 text-sm">
             <span className="text-zinc-800">
               {item.quantity} × {item.name}
-              {item.note && (
-                <span className="ml-2 text-zinc-500">({item.note})</span>
-              )}
+              {item.note && <span className="ml-2 text-zinc-500">({item.note})</span>}
             </span>
             <span className="shrink-0 text-zinc-600 tabular-nums">
               {formatMoney(item.lineTotalCents, currency)}
@@ -254,7 +243,9 @@ function OrderCard({
           {order.customerName && <Detail label="Name" value={order.customerName} />}
           {order.customerPhone && <Detail label="Phone" value={order.customerPhone} />}
           {order.customerEmail && <Detail label="Email" value={order.customerEmail} />}
-          {order.deliveryAddress && <Detail label="Address" value={order.deliveryAddress} />}
+          {order.deliveryAddress && (
+            <Detail label="Address" value={order.deliveryAddress} />
+          )}
         </dl>
       )}
 
@@ -373,7 +364,8 @@ function PaymentRow({
       ? "text-green-700"
       : order.paymentStatus === "FAILED"
         ? "text-red-600"
-        : order.paymentStatus === "REFUNDED" || order.paymentStatus === "PARTIALLY_REFUNDED"
+        : order.paymentStatus === "REFUNDED" ||
+            order.paymentStatus === "PARTIALLY_REFUNDED"
           ? "text-amber-700"
           : "text-zinc-500";
 
@@ -473,4 +465,3 @@ function formatMoney(cents: number, currency: string): string {
     return (cents / 100).toFixed(2);
   }
 }
-

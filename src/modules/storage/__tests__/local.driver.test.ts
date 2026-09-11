@@ -97,7 +97,9 @@ describe("localDriver", () => {
       }),
     ).rejects.toThrow(/unsafe storage key/i);
 
-    await expect(localDriver.delete(escape as never)).rejects.toThrow(/unsafe storage key/i);
+    await expect(localDriver.delete(escape as never)).rejects.toThrow(
+      /unsafe storage key/i,
+    );
   });
 
   it("lists only well-formed keys, ignoring the temp directory", async () => {

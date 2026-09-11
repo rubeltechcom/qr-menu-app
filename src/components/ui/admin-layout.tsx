@@ -33,12 +33,15 @@ export function AdminLayout({
       {/* Sidebar (Desktop) */}
       <aside className="hidden w-64 flex-col border-r border-zinc-200 bg-white md:flex">
         <div className="flex h-16 items-center border-b border-zinc-200 px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-zinc-900">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-semibold tracking-tight text-zinc-900"
+          >
             <Store className="h-5 w-5" />
             <span>QR Menu App</span>
           </Link>
         </div>
-        
+
         <nav className="flex-1 overflow-y-auto p-4">
           <div className="flex flex-col gap-1">
             {navItems.map((item) => {
@@ -92,24 +95,20 @@ export function AdminLayout({
               {title}
             </h1>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="hidden flex-col items-end sm:flex">
               <span className="text-sm font-medium text-zinc-900">
                 {userName || "User"}
               </span>
-              <span className="text-xs text-zinc-500">
-                {userEmail}
-              </span>
+              <span className="text-xs text-zinc-500">{userEmail}</span>
             </div>
           </div>
         </header>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-6xl">
-            {children}
-          </div>
+          <div className="mx-auto max-w-6xl">{children}</div>
         </div>
       </main>
     </div>
