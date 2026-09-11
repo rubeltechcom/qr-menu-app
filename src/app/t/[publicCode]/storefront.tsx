@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCart } from "./use-cart";
 import { useFavourites } from "./use-favourites";
+import { useActiveOrder } from "./use-active-order";
 
 interface MenuItemView {
   id: string;
@@ -149,11 +150,10 @@ export function Storefront({
     trackToken: string;
   } | null>(null);
   // The most recent order from this device, kept so the menu can offer a
-  // way back to its tracking page after the sheet closes.
-  const [activeOrder, setActiveOrder] = useState<{
-    orderNumber: number;
-    trackToken: string;
-  } | null>(null);
+  // way back to its tracking page after the sheet closes. Stored rather
+  // than held in state: a diner who refreshes or locks their phone while
+  // waiting must not lose the only link to their own order.
+  const { activeOrder, remember: rememberOrder } = useActiveOrder(publicCode);
   const [selectedItem, setSelectedItem] = useState<MenuItemView | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>(POPULAR_ID);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -345,10 +345,10 @@ export function Storefront({
     (result: { orderNumber: number; trackToken: string }) => {
       clearCart();
       setSheetOpen(false);
-      setActiveOrder(result);
+      rememberOrder(result);
       if (needsPayment) setPlaced(result);
     },
-    [clearCart, needsPayment],
+    [clearCart, needsPayment, rememberOrder],
   );
 
   /**
