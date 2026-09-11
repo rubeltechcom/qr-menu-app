@@ -1,4 +1,5 @@
 import { rawPrisma } from "@/server/db/client";
+import { appVersion } from "@/lib/app-version";
 
 /**
  * Liveness and readiness for the deployment platform.
@@ -16,7 +17,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const version = process.env.APP_VERSION ?? "unknown";
+  const version = appVersion();
 
   try {
     // Cheapest possible round trip: proves the connection works without

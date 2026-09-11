@@ -41,6 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# written by the Docker build, read at runtime to report the version
+/.version
+
 # local scratch/debug scripts — never part of the app
 /scratch.js
 /scratch.*.js

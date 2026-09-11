@@ -2,6 +2,7 @@ import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { requireSuperadmin } from "@/lib/require-superadmin";
+import { appVersion } from "@/lib/app-version";
 import { env } from "@/lib/env";
 import { describeStorage, getStorageDriver } from "@/modules/storage/registry";
 import { uploadRoot } from "@/modules/storage/local.driver";
@@ -127,6 +128,18 @@ async function checkUploads(): Promise<Check[]> {
     label: "Upload directory",
     status: "ok",
     detail: root,
+    // The Docker image sets UPLOAD_DIR=/data/uploads. Landing on the
+    // built-in default instead means the variable arrived empty — which
+    // is what happens when .env.example is pasted wholesale into a
+    // deployment, since an empty value overrides the image's own ENV.
+    fix:
+      process.env.NODE_ENV === "production" && !process.env.UPLOAD_DIR
+        ? "UPLOAD_DIR is not set, so this is the built-in default rather " +
+          "than the image's /data/uploads. If you pasted .env.example into " +
+          "your deployment, remove the empty UPLOAD_DIR line — an empty " +
+          "value overrides the Dockerfile. Either way, mount the volume at " +
+          "the path shown above and it will work."
+        : undefined,
   });
 
   // Is it writable? This is the check that catches a volume mounted
@@ -201,7 +214,7 @@ export default async function DiagnosticsPage() {
     {
       label: "Version",
       status: "ok",
-      detail: process.env.APP_VERSION ?? "unknown (set by the Docker build)",
+      detail: appVersion(),
     },
     {
       label: "Environment",

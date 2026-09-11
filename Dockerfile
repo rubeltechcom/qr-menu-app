@@ -61,11 +61,6 @@ ENV HOSTNAME=0.0.0.0
 ENV UPLOAD_DIR=/data/uploads
 RUN mkdir -p /data/uploads && chown -R node:node /data
 
-# The version this image was built from, surfaced in the deploy log and
-# by the health endpoint so a running container can be identified.
-ARG APP_VERSION=0.0.0
-ENV APP_VERSION=${APP_VERSION}
-
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
@@ -88,6 +83,16 @@ COPY --from=builder --chown=node:node /app/scripts ./scripts
 COPY --from=builder --chown=node:node /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=node:node /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder --chown=node:node /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+# The version this image was built from, so a running container can say
+# which deploy it is. Written AFTER the standalone output is copied,
+# because that copy writes into /app and would otherwise clobber it.
+#
+# Taken from package.json at build time rather than a --build-arg:
+# Coolify does not pass build args, so an ARG-based version always fell
+# back to its default and every container reported "unknown".
+RUN node -p "require('./package.json').version" > /app/.version \
+  && chown node:node /app/.version
 
 COPY --chown=node:node docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
