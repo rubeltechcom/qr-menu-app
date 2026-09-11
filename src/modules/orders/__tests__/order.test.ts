@@ -317,7 +317,12 @@ describe("orders", () => {
     const numbers = placements.map((result) => result.order.orderNumber);
     expect(new Set(numbers).size).toBe(numbers.length);
 
-    // And they are a contiguous run, not scattered.
+    // A contiguous run — no number skipped, none taken twice.
+    //
+    // Measured relative to this batch's own lowest number rather than an
+    // absolute value: other tests in this file place orders against the
+    // same counter, and asserting "starts at 1" would make this test
+    // depend on how many ran before it.
     const sorted = [...numbers].sort((a, b) => a - b);
     for (let i = 1; i < sorted.length; i += 1) {
       expect(sorted[i]).toBe(sorted[i - 1]! + 1);

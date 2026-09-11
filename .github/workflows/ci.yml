@@ -13,12 +13,19 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: qrmenu
-          POSTGRES_PASSWORD: qrmenu_dev_password
+          # The container's own superuser. The app does NOT connect as
+          # this role — see the "Create the application role" step.
+          #
+          # POSTGRES_USER creates a SUPERUSER, and a superuser bypasses
+          # row-level security entirely. Pointing the app at it made
+          # every tenant-isolation test fail in CI while passing
+          # locally: the tests were right, and the database was wrong.
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_only
           POSTGRES_DB: qrmenu_test
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U qrmenu"
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -41,6 +48,36 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # An ordinary, non-superuser role for the app — the same shape as
+      # production, where the app must never be able to bypass RLS.
+      #
+      # Without this the isolation suite is meaningless: it would pass
+      # by never actually exercising a policy, which is worse than
+      # failing, because it would report isolation as working when it is
+      # not being tested at all.
+      - name: Create the application role
+        env:
+          PGPASSWORD: postgres_ci_only
+        run: |
+          set -euo pipefail
+          psql -h localhost -U postgres -d qrmenu_test -v ON_ERROR_STOP=1 <<'SQL'
+            CREATE ROLE qrmenu LOGIN PASSWORD 'qrmenu_dev_password'
+              NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
+
+            -- Owns the schema, so migrations can create and alter tables.
+            -- Table owners are still subject to FORCE ROW LEVEL SECURITY,
+            -- which every tenant table sets.
+            ALTER SCHEMA public OWNER TO qrmenu;
+            GRANT ALL ON SCHEMA public TO qrmenu;
+          SQL
+
+          # Prove it, rather than assume: a superuser here would silently
+          # disable every policy the isolation suite is meant to prove.
+          psql -h localhost -U postgres -d qrmenu_test -tAc \
+            "SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname='qrmenu'" \
+            | grep -qx 'f' \
+            || { echo "::error::The qrmenu role can bypass RLS; isolation tests would be meaningless."; exit 1; }
 
       - uses: actions/setup-node@v4
         with:

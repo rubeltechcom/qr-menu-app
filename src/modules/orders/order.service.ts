@@ -155,60 +155,76 @@ export async function placeOrder(input: unknown) {
   // One transaction: allocate the number, write the order, its items and
   // its first event. The counter lock is held until this commits, so two
   // simultaneous orders cannot take the same number.
-  const order = await db.$transaction(async (tx) => {
-    const orderNumber = await allocateOrderNumber(tx, {
-      tenantId: table.tenantId,
-      locationId: location.id,
-      businessDate,
-    });
-
-    const created = await tx.order.create({
-      data: {
+  //
+  // The timeouts are raised from Prisma's defaults (2s to acquire, 5s to
+  // run) because this transaction SERIALISES on the counter row by
+  // design: every order for a location queues behind the one before it.
+  // A rush — eight tables ordering at once, which is a normal Friday —
+  // makes the last caller wait for all seven ahead of it, and the
+  // default budget is spent on a slow or busy database. Failing there
+  // would lose a real order.
+  const order = await db.$transaction(
+    async (tx) => {
+      const orderNumber = await allocateOrderNumber(tx, {
         tenantId: table.tenantId,
         locationId: location.id,
-        orderNumber,
         businessDate,
-        type: parsed.type,
-        status: "PENDING",
-        tableId: parsed.type === "DINE_IN" ? seatedTableId : null,
-        customerName: parsed.customerName,
-        customerPhone: parsed.customerPhone,
-        customerEmail: parsed.customerEmail,
-        deliveryAddress: parsed.type === "DELIVERY" ? parsed.deliveryAddress : null,
-        note: parsed.note,
-        scheduledFor: parsed.scheduledFor ? new Date(parsed.scheduledFor) : null,
-        subtotalCents,
-        deliveryFeeCents,
-        totalCents,
-        currency: location.currency,
-        trackToken,
-        items: {
-          create: lines.map((line) => ({
-            tenantId: table.tenantId,
-            menuItemId: line.menuItemId,
-            nameSnapshot: line.nameSnapshot,
-            unitPriceCents: line.unitPriceCents,
-            quantity: line.quantity,
-            lineTotalCents: line.lineTotalCents,
-            modifiersSnapshot: line.modifiersSnapshot,
-            note: line.note,
-          })),
-        },
-        events: {
-          create: { tenantId: table.tenantId, status: "PENDING" },
-        },
-      },
-      include: {
-        items: true,
-        table: { select: { id: true, label: true } },
-        // Always empty on a brand-new order, but included so the shape
-        // matches what serializeOrder expects everywhere else.
-        payments: true,
-      },
-    });
+      });
 
-    return created;
-  });
+      const created = await tx.order.create({
+        data: {
+          tenantId: table.tenantId,
+          locationId: location.id,
+          orderNumber,
+          businessDate,
+          type: parsed.type,
+          status: "PENDING",
+          tableId: parsed.type === "DINE_IN" ? seatedTableId : null,
+          customerName: parsed.customerName,
+          customerPhone: parsed.customerPhone,
+          customerEmail: parsed.customerEmail,
+          deliveryAddress: parsed.type === "DELIVERY" ? parsed.deliveryAddress : null,
+          note: parsed.note,
+          scheduledFor: parsed.scheduledFor ? new Date(parsed.scheduledFor) : null,
+          subtotalCents,
+          deliveryFeeCents,
+          totalCents,
+          currency: location.currency,
+          trackToken,
+          items: {
+            create: lines.map((line) => ({
+              tenantId: table.tenantId,
+              menuItemId: line.menuItemId,
+              nameSnapshot: line.nameSnapshot,
+              unitPriceCents: line.unitPriceCents,
+              quantity: line.quantity,
+              lineTotalCents: line.lineTotalCents,
+              modifiersSnapshot: line.modifiersSnapshot,
+              note: line.note,
+            })),
+          },
+          events: {
+            create: { tenantId: table.tenantId, status: "PENDING" },
+          },
+        },
+        include: {
+          items: true,
+          table: { select: { id: true, label: true } },
+          // Always empty on a brand-new order, but included so the shape
+          // matches what serializeOrder expects everywhere else.
+          payments: true,
+        },
+      });
+
+      return created;
+    },
+    {
+      // Time to get a connection and open the transaction.
+      maxWait: 15_000,
+      // Time the transaction itself may run once opened.
+      timeout: 20_000,
+    },
+  );
 
   // Wake the kitchen. Published after the transaction commits, so the
   // board never receives an order it cannot then read back.
