@@ -1,8 +1,12 @@
 import type { NextRequest } from "next/server";
-import { env } from "@/lib/env";
 import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
 import { checkUploadRateLimit } from "@/modules/storage/rate-limit";
-import { UploadError, uploadImage } from "@/modules/storage/upload.service";
+import {
+  UploadError,
+  maxImageBytes,
+  maxVideoBytes,
+  uploadImage,
+} from "@/modules/storage/upload.service";
 import type { UploadKind } from "@/modules/storage/provider";
 
 /**
@@ -22,7 +26,7 @@ import type { UploadKind } from "@/modules/storage/provider";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const KINDS: readonly UploadKind[] = ["menuItem", "category"];
+const KINDS: readonly UploadKind[] = ["menuItem", "category", "brand"];
 
 const STATUS: Record<UploadError["code"], number> = {
   NO_FILE: 400,
@@ -78,12 +82,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Reject an oversized body before allocating anything for it. This is
-  // a claim, so upload.service re-checks the real size after parsing.
+  // Reject an oversized body before allocating anything for it. Uses
+  // the larger of the two caps, because the real type is not known
+  // until the bytes are sniffed; upload.service then applies the right
+  // one to the actual file.
+  const ceiling = Math.max(maxImageBytes(), maxVideoBytes());
   const declaredLength = Number(request.headers.get("content-length") ?? 0);
-  if (declaredLength > env.UPLOAD_MAX_BYTES * 1.1) {
-    const limitMb = Math.floor(env.UPLOAD_MAX_BYTES / (1024 * 1024));
-    return Response.json({ error: `That image is larger than ${limitMb}MB.` }, { status: 413 });
+  if (declaredLength > ceiling * 1.1) {
+    const limitMb = Math.floor(ceiling / (1024 * 1024));
+    return Response.json({ error: `That file is larger than ${limitMb}MB.` }, { status: 413 });
   }
 
   let file: File | null;
@@ -108,6 +115,7 @@ export async function POST(request: NextRequest) {
         bytes: stored.bytes,
         width: stored.width,
         height: stored.height,
+        isVideo: stored.isVideo,
       },
       { status: 201 },
     );

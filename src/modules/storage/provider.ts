@@ -14,6 +14,11 @@
 /** Image formats we accept. SVG is deliberately absent — see sniff.ts. */
 export type ImageType = "jpeg" | "png" | "webp" | "avif";
 
+/** Video formats. MP4 first: it is the only one every phone plays. */
+export type VideoType = "mp4" | "webm" | "quicktime";
+
+export type MediaType = ImageType | VideoType;
+
 export type StorageDriverId = "LOCAL" | "S3";
 
 /**
@@ -31,8 +36,11 @@ export type StorageDriverId = "LOCAL" | "S3";
  */
 export type StorageKey = string & { readonly __brand: "StorageKey" };
 
-/** What a file is attached to. Part of the key, so it is also a folder. */
-export type UploadKind = "menuItem" | "category";
+/**
+ * What a file is attached to. Part of the key, so it is also a folder.
+ * `brand` covers a restaurant's own logo.
+ */
+export type UploadKind = "menuItem" | "category" | "brand";
 
 export interface PutParams {
   key: StorageKey;
@@ -41,7 +49,7 @@ export interface PutParams {
    * Determined by the server from the file's magic bytes — never taken
    * from the client's Content-Type header, which is a claim, not a fact.
    */
-  contentType: `image/${ImageType}`;
+  contentType: `image/${ImageType}` | `video/${VideoType}`;
 }
 
 export interface StoredObject {

@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import type { ImageType, StorageKey, UploadKind } from "./provider";
+import type { MediaType, StorageKey, UploadKind } from "./provider";
 
 /**
  * Storage key construction and validation.
@@ -18,22 +18,28 @@ import type { ImageType, StorageKey, UploadKind } from "./provider";
 /** Where a key's public URL lives under the local driver. */
 export const UPLOAD_URL_PREFIX = "/api/uploads";
 
-const EXTENSION: Record<ImageType, string> = {
+const EXTENSION: Record<MediaType, string> = {
   jpeg: "jpg",
   png: "png",
   webp: "webp",
   avif: "avif",
+  mp4: "mp4",
+  webm: "webm",
+  quicktime: "mov",
 };
 
-const TYPE_FOR_EXTENSION: Record<string, ImageType> = {
+const TYPE_FOR_EXTENSION: Record<string, MediaType> = {
   jpg: "jpeg",
   jpeg: "jpeg",
   png: "png",
   webp: "webp",
   avif: "avif",
+  mp4: "mp4",
+  webm: "webm",
+  mov: "quicktime",
 };
 
-const KINDS: readonly UploadKind[] = ["menuItem", "category"];
+const KINDS: readonly UploadKind[] = ["menuItem", "category", "brand"];
 
 /**
  * The only shape a key may take.
@@ -48,12 +54,12 @@ const KINDS: readonly UploadKind[] = ["menuItem", "category"];
  * coincidence a later change could break.
  */
 const KEY_PATTERN =
-  /^t\/[a-z0-9]+\/(menuItem|category)\/\d{4}\/\d{2}\/[a-z0-9]+\.(jpg|jpeg|png|webp|avif)$/;
+  /^t\/[a-z0-9]+\/(menuItem|category|brand)\/\d{4}\/\d{2}\/[a-z0-9]+\.(jpg|jpeg|png|webp|avif|mp4|webm|mov)$/;
 
 export interface ParsedKey {
   tenantId: string;
   kind: UploadKind;
-  type: ImageType;
+  type: MediaType;
 }
 
 /** True only for a string matching the documented key shape exactly. */
@@ -71,7 +77,7 @@ export function isSafeKey(raw: string): boolean {
 export function buildKey(input: {
   tenantId: string;
   kind: UploadKind;
-  type: ImageType;
+  type: MediaType;
   now?: Date;
 }): StorageKey {
   const now = input.now ?? new Date();

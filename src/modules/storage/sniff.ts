@@ -1,4 +1,4 @@
-import type { ImageType } from "./provider";
+import type { ImageType, MediaType, VideoType } from "./provider";
 
 /**
  * What a file actually is, decided from its first bytes.
@@ -52,6 +52,41 @@ export function sniffImageType(bytes: Uint8Array): ImageType | null {
   }
 
   return null;
+}
+
+/**
+ * Video formats, decided the same way and for the same reason: a phone
+ * will happily label a file `video/mp4` when it is nothing of the sort.
+ *
+ * MP4 and QuickTime share the ISO base media container, distinguished
+ * by their brand. QuickTime is included because that is what an iPhone
+ * produces, and rejecting it would mean rejecting most uploads.
+ */
+export function sniffVideoType(bytes: Uint8Array): VideoType | null {
+  if (bytes.length < 12) return null;
+
+  // WebM/Matroska: EBML header.
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) {
+    return "webm";
+  }
+
+  if (ascii(bytes, 4, 8) === "ftyp") {
+    const brand = ascii(bytes, 8, 12);
+    if (brand === "qt  ") return "quicktime";
+    // isom, iso2, mp41, mp42, avc1, M4V, dash… all play as MP4.
+    if (/^(isom|iso[2-9]|mp4[12]|avc1|M4V |dash|mmp4)$/.test(brand)) return "mp4";
+  }
+
+  return null;
+}
+
+/** Either kind, for an endpoint that accepts both. */
+export function sniffMediaType(bytes: Uint8Array): MediaType | null {
+  return sniffImageType(bytes) ?? sniffVideoType(bytes);
+}
+
+export function isVideoType(type: MediaType): type is VideoType {
+  return type === "mp4" || type === "webm" || type === "quicktime";
 }
 
 /**

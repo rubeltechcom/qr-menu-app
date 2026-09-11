@@ -36,6 +36,9 @@ const CONTENT_TYPE: Record<string, string> = {
   png: "image/png",
   webp: "image/webp",
   avif: "image/avif",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
 };
 
 /** Where uploads live. Resolved once, absolute from here on. */

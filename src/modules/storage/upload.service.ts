@@ -1,7 +1,8 @@
 import { env } from "@/lib/env";
+import { getNumberSetting } from "@/modules/platform/settings.service";
 import { buildKey, keyBelongsToTenant, keyFromUrl } from "./key";
 import { getStorageDriver } from "./registry";
-import { readDimensions, sniffImageType } from "./sniff";
+import { isVideoType, readDimensions, sniffMediaType } from "./sniff";
 import type { StoredObject, UploadKind } from "./provider";
 
 /**
@@ -40,35 +41,55 @@ export class UploadError extends Error {
  */
 const MAX_EDGE_PIXELS = 12_000;
 
+/** The size caps, which the operator can change in the admin panel. */
+export function maxImageBytes(): number {
+  return getNumberSetting("uploads.maxImageMb", 8) * 1024 * 1024;
+}
+
+export function maxVideoBytes(): number {
+  return getNumberSetting("uploads.maxVideoMb", 20) * 1024 * 1024;
+}
+
 export async function uploadImage(params: {
   tenantId: string;
   kind: UploadKind;
   file: File;
-}): Promise<StoredObject & { width: number | null; height: number | null }> {
+}): Promise<
+  StoredObject & { width: number | null; height: number | null; isVideo: boolean }
+> {
   const { tenantId, kind, file } = params;
 
   if (!file || file.size === 0) {
     throw new UploadError("No file was received.", "NO_FILE");
   }
 
-  // Checked again here even though the route checks Content-Length:
-  // that header is a claim, this is the actual body.
-  if (file.size > env.UPLOAD_MAX_BYTES) {
-    const limitMb = Math.floor(env.UPLOAD_MAX_BYTES / (1024 * 1024));
-    throw new UploadError(`That image is larger than ${limitMb}MB.`, "TOO_LARGE");
-  }
-
   const bytes = Buffer.from(await file.arrayBuffer());
 
-  const type = sniffImageType(bytes);
+  const type = sniffMediaType(bytes);
   if (!type) {
     throw new UploadError(
-      "That file isn't an image we can use. Try a JPEG, PNG or WebP.",
+      "That file isn't an image or video we can use. Try a JPEG, PNG, WebP or MP4.",
       "UNSUPPORTED_TYPE",
     );
   }
 
-  const dimensions = readDimensions(bytes, type);
+  const isVideo = isVideoType(type);
+
+  // Videos get their own, larger cap. Checked after sniffing so the
+  // limit matches what the file actually is, not what it claims to be.
+  const limit = isVideo ? maxVideoBytes() : maxImageBytes();
+  if (file.size > limit) {
+    const limitMb = Math.floor(limit / (1024 * 1024));
+    throw new UploadError(
+      `That ${isVideo ? "video" : "image"} is larger than ${limitMb}MB.`,
+      "TOO_LARGE",
+    );
+  }
+
+  // Only images carry dimensions we can read from a header cheaply; a
+  // video's are inside the container and not worth parsing here, since
+  // the size cap already bounds the damage.
+  const dimensions = isVideo ? null : readDimensions(bytes, type);
   if (dimensions && (dimensions.width > MAX_EDGE_PIXELS || dimensions.height > MAX_EDGE_PIXELS)) {
     throw new UploadError(
       "That image's dimensions are too large. Please resize it first.",
@@ -82,18 +103,21 @@ export async function uploadImage(params: {
     const stored = await getStorageDriver().put({
       key,
       body: bytes,
-      contentType: `image/${type}`,
+      contentType: isVideo
+        ? (`video/${type}` as `video/${"mp4" | "webm" | "quicktime"}`)
+        : (`image/${type}` as `image/${"jpeg" | "png" | "webp" | "avif"}`),
     });
     return {
       ...stored,
       width: dimensions?.width ?? null,
       height: dimensions?.height ?? null,
+      isVideo,
     };
   } catch (cause) {
     // The underlying ENOSPC/EACCES/S3 message goes to the server log,
     // never to the browser — it would leak paths and bucket names.
     console.error("[storage] failed to store an upload", cause);
-    throw new UploadError("We couldn't save that image. Please try again.", "STORAGE_FAILED");
+    throw new UploadError("We couldn't save that file. Please try again.", "STORAGE_FAILED");
   }
 }
 
