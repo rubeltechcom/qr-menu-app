@@ -7,6 +7,7 @@ import {
   findUserByEmail,
 } from "@/modules/users/user.repository";
 import { env } from "@/lib/env";
+import { stripLoopbackAuthUrl } from "@/lib/auth-url";
 import {
   getSetting,
   loadSettings,
@@ -34,6 +35,11 @@ import {
  * returns null — a button that opens a Google error page is worse than
  * no button, and the operator would not see it themselves.
  */
+// Before Auth.js reads the environment: a loopback AUTH_URL inherited
+// from a build placeholder would otherwise point every OAuth callback
+// at localhost. See auth-url.ts.
+stripLoopbackAuthUrl(process.env, env.APP_URL);
+
 export async function googleCredentials(): Promise<{
   id: string;
   secret: string;
