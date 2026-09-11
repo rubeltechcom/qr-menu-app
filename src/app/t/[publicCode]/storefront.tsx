@@ -1194,8 +1194,11 @@ function CheckoutSheet({
 
               <p className="mt-6 text-xs text-zinc-500">
                 {t("termsNotice")}{" "}
-                <a href="#" className="underline">
-                  terms
+                {/* A real page rather than "#": the checkout asks the
+                    diner to agree to terms, so they have to be readable.
+                    Opened in a new tab so a half-filled basket survives. */}
+                <a href="/terms" target="_blank" rel="noreferrer" className="underline">
+                  {t("terms")}
                 </a>
               </p>
             </>

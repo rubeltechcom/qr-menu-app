@@ -101,6 +101,12 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <Link href="/staff" className="hover:text-zinc-900">
               Staff console
             </Link>
+            <Link href="/privacy-policy" className="hover:text-zinc-900">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-zinc-900">
+              Terms
+            </Link>
           </nav>
         </div>
       </footer>
