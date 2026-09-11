@@ -10,6 +10,11 @@ import {
   Truck,
 } from "lucide-react";
 import { Pricing } from "@/components/marketing/pricing";
+import {
+  getSetting,
+  loadSettings,
+  settingsLoaded,
+} from "@/modules/platform/settings.service";
 
 /**
  * The marketing home page.
@@ -19,8 +24,46 @@ import { Pricing } from "@/components/marketing/pricing";
  * and the speed to a working QR code lead, and everything else follows.
  */
 
-/** The demo table seeded by prisma/seed-demo.mjs, used by the demo CTA. */
-const DEMO_TABLE_CODE = "DEMO2345";
+/**
+ * The landing page reads its demo links from platform settings rather
+ * than a constant, so an operator points them at a real restaurant from
+ * /admin/settings instead of editing code.
+ *
+ * There is deliberately no default: the seeded DEMO2345 exists only on a
+ * developer's machine, and shipping it as a fallback sent every
+ * deployed install's "See a live demo" button to a 404.
+ */
+export const dynamic = "force-dynamic";
+
+interface ShowcaseMenu {
+  code: string;
+  name: string;
+}
+
+/**
+ * The example menus, as an operator types them in /admin/settings.
+ *
+ * One per line, "CODE | Name". A plain text field rather than a table
+ * of its own: this is a handful of entries changed occasionally, and a
+ * whole CRUD screen for it would be more to maintain than it is worth.
+ *
+ * Anything malformed is skipped rather than rejected — a typo on one
+ * line should not blank the whole section.
+ */
+function parseShowcase(raw: string | undefined): ShowcaseMenu[] {
+  if (!raw) return [];
+
+  return raw
+    .split("\n")
+    .map((line) => {
+      const [code, ...rest] = line.split("|");
+      const trimmed = code?.trim();
+      if (!trimmed) return null;
+      return { code: trimmed, name: rest.join("|").trim() || trimmed };
+    })
+    .filter((entry): entry is ShowcaseMenu => entry !== null)
+    .slice(0, 24);
+}
 
 const STEPS = [
   {
@@ -108,7 +151,12 @@ const FAQS = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  if (!settingsLoaded()) await loadSettings();
+
+  const demoCode = getSetting("platform.demoTableCode")?.trim();
+  const showcase = parseShowcase(getSetting("showcase.menus"));
+
   return (
     <>
       {/* Hero */}
@@ -137,12 +185,16 @@ export default function HomePage() {
               >
                 Create your free menu
               </Link>
-              <Link
-                href={`/t/${DEMO_TABLE_CODE}`}
-                className="rounded-full border border-zinc-300 bg-white px-7 py-3.5 text-base font-semibold text-zinc-900 transition-colors hover:bg-zinc-50"
-              >
-                See a live demo
-              </Link>
+              {/* Hidden rather than pointing at a table that does not
+                  exist — a dead "See a live demo" is worse than none. */}
+              {demoCode && (
+                <Link
+                  href={`/t/${demoCode}`}
+                  className="rounded-full border border-zinc-300 bg-white px-7 py-3.5 text-base font-semibold text-zinc-900 transition-colors hover:bg-zinc-50"
+                >
+                  See a live demo
+                </Link>
+              )}
             </div>
 
             <p className="mt-4 text-sm text-zinc-500">
@@ -280,6 +332,48 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Real menus, not mockups. Nothing persuades a restaurant like
+          seeing another restaurant's working menu — which is why these
+          link straight to the live storefront rather than a screenshot.
+          Hidden entirely until an operator adds some in /admin/settings. */}
+      {showcase.length > 0 && (
+        <section className="mx-auto max-w-6xl px-6 py-20">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+              Menus already running on this platform
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-600">
+              Open any of them to see exactly what your guests would see. These are live
+              menus, not pictures.
+            </p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {showcase.map((menu) => (
+              <Link
+                key={menu.code}
+                href={`/t/${menu.code}`}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all hover:border-zinc-300 hover:shadow-md"
+              >
+                <div className="flex aspect-[3/4] items-center justify-center bg-gradient-to-b from-amber-50 to-white">
+                  <span className="text-5xl transition-transform group-hover:scale-110">
+                    🍽️
+                  </span>
+                </div>
+                <div className="border-t border-zinc-100 p-3">
+                  <p className="truncate text-sm font-semibold text-zinc-900">
+                    {menu.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-zinc-500 group-hover:text-blue-600">
+                    Open the menu →
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <Pricing />
 

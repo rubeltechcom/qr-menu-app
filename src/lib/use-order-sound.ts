@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalStorageState } from "@/lib/use-local-storage";
 
 const STORAGE_KEY = "qrmenu.sound-enabled";
-const SOUND_URL = "/sounds/new-order.wav";
+const DEFAULT_SOUND_URL = "/sounds/new-order.wav";
 
 /**
  * The audible new-order alert, and the one-click gesture that arms it.
@@ -19,7 +19,8 @@ const SOUND_URL = "/sounds/new-order.wav";
  * shift. It is remembered per browser, which is correct — the permission
  * itself is per browser.
  */
-export function useOrderSound() {
+/** `soundUrl` lets the operator replace the chime from /admin/settings. */
+export function useOrderSound(soundUrl?: string) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isArmed, setIsArmed] = useState(false);
 
@@ -32,7 +33,7 @@ export function useOrderSound() {
   );
 
   useEffect(() => {
-    const audio = new Audio(SOUND_URL);
+    const audio = new Audio(soundUrl || DEFAULT_SOUND_URL);
     audio.preload = "auto";
     audioRef.current = audio;
 
@@ -40,7 +41,9 @@ export function useOrderSound() {
       audio.pause();
       audioRef.current = null;
     };
-  }, []);
+    // Rebuilt when the operator changes the sound, so a new chime takes
+    // effect without staff reloading the tablet.
+  }, [soundUrl]);
 
   /**
    * Call from a real user gesture (a click). Playing muted and rewinding

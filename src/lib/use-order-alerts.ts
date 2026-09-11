@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import type { SerializedOrder } from "@/modules/orders/order.service";
 import { useOrderSound } from "@/lib/use-order-sound";
 
@@ -44,8 +44,28 @@ function notifyPermissionChanged() {
   for (const listener of permissionListeners) listener();
 }
 
-export function useOrderAlerts() {
-  const { isArmed, arm, play } = useOrderSound();
+/**
+ * What the operator configured in /admin/settings.
+ *
+ * Optional so the hook still works where no settings are passed — the
+ * defaults match the behaviour before these were configurable.
+ */
+export interface AlertPreferences {
+  soundEnabled?: boolean;
+  soundUrl?: string;
+  repeatSeconds?: number;
+  desktopNotifications?: boolean;
+}
+
+export function useOrderAlerts(preferences: AlertPreferences = {}) {
+  const {
+    soundEnabled = true,
+    soundUrl,
+    repeatSeconds = 0,
+    desktopNotifications = true,
+  } = preferences;
+
+  const { isArmed, arm, play } = useOrderSound(soundUrl);
 
   const subscribe = useCallback((onChange: () => void) => {
     permissionListeners.add(onChange);
@@ -80,23 +100,28 @@ export function useOrderAlerts() {
     }
   }, []);
 
-  const showNotification = useCallback((order: SerializedOrder) => {
-    if (typeof Notification === "undefined" || Notification.permission !== "granted") {
-      return;
-    }
-    try {
-      new Notification("New order received", {
-        body: `${TYPE_LABEL[order.type]} #${order.orderNumber}`,
-        // The order id, so a re-sync that re-reports the same order
-        // replaces the existing popup instead of stacking a duplicate.
-        tag: order.id,
-        requireInteraction: false,
-      });
-    } catch {
-      // Some browsers only allow Notification from a service worker.
-      // The chime and the on-screen card still do their job.
-    }
-  }, []);
+  const showNotification = useCallback(
+    (order: SerializedOrder) => {
+      // Turned off by the operator, so do not ask and do not show.
+      if (!desktopNotifications) return;
+      if (typeof Notification === "undefined" || Notification.permission !== "granted") {
+        return;
+      }
+      try {
+        new Notification("New order received", {
+          body: `${TYPE_LABEL[order.type]} #${order.orderNumber}`,
+          // The order id, so a re-sync that re-reports the same order
+          // replaces the existing popup instead of stacking a duplicate.
+          tag: order.id,
+          requireInteraction: false,
+        });
+      } catch {
+        // Some browsers only allow Notification from a service worker.
+        // The chime and the on-screen card still do their job.
+      }
+    },
+    [desktopNotifications],
+  );
 
   /**
    * Announce a new order. This is what goes to `useLiveOrders`'
@@ -104,20 +129,40 @@ export function useOrderAlerts() {
    */
   const announce = useCallback(
     (order: SerializedOrder) => {
-      play();
+      if (soundEnabled) play();
       showNotification(order);
     },
-    [play, showNotification],
+    [soundEnabled, play, showNotification],
   );
+
+  /**
+   * Keep sounding while an order sits unaccepted.
+   *
+   * For a kitchen loud enough that one chime is missed. Driven by the
+   * caller passing the number of orders still waiting, so it stops as
+   * soon as the queue is cleared rather than running on a timer nobody
+   * remembered to cancel.
+   */
+  const [waitingCount, setWaitingCount] = useState(0);
+
+  useEffect(() => {
+    if (!soundEnabled || repeatSeconds <= 0 || waitingCount === 0 || !isArmed) {
+      return;
+    }
+    const timer = setInterval(() => play(), repeatSeconds * 1000);
+    return () => clearInterval(timer);
+  }, [soundEnabled, repeatSeconds, waitingCount, isArmed, play]);
 
   /** One click that turns on both, for a single "enable alerts" button. */
   const enableAll = useCallback(async () => {
-    await arm();
-    await enableNotifications();
-  }, [arm, enableNotifications]);
+    if (soundEnabled) await arm();
+    if (desktopNotifications) await enableNotifications();
+  }, [soundEnabled, desktopNotifications, arm, enableNotifications]);
 
   return {
     announce,
+    /** Tell the hook how many orders are still waiting, for the repeat. */
+    setWaitingCount,
     // Sound
     isSoundArmed: isArmed,
     armSound: arm,
@@ -126,7 +171,13 @@ export function useOrderAlerts() {
     enableNotifications,
     // Both
     enableAll,
-    /** True once nothing further is needed from the staff. */
-    isFullyArmed: isArmed && (permission === "granted" || permission === "unsupported"),
+    /**
+     * True once nothing further is needed from the staff — which
+     * includes the case where the operator turned an alert off, since
+     * there is then nothing left to grant.
+     */
+    isFullyArmed:
+      (!soundEnabled || isArmed) &&
+      (!desktopNotifications || permission === "granted" || permission === "unsupported"),
   };
 }

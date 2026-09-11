@@ -3,6 +3,8 @@ import { forTenant } from "@/server/db/tenant-client";
 import * as locationRepo from "@/modules/locations/location.repository";
 import { listOpenOrders } from "@/modules/orders/order.repository";
 import { serializeOrder } from "@/modules/orders/order.service";
+import { alertSettings } from "@/modules/platform/alert-settings";
+import { loadSettings, settingsLoaded } from "@/modules/platform/settings.service";
 import { KitchenDisplay } from "./kitchen-display";
 
 /**
@@ -33,8 +35,13 @@ export default async function KitchenPage() {
 
   const orders = await listOpenOrders(db, location.id);
 
+  // How the operator configured alerts, resolved once on the server.
+  if (!settingsLoaded()) await loadSettings();
+  const alerts = alertSettings();
+
   return (
     <KitchenDisplay
+      alerts={alerts}
       locationId={location.id}
       currency={location.currency}
       initialOrders={orders.map(serializeOrder)}

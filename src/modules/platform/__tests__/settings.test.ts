@@ -9,6 +9,7 @@ import {
   renderSettings,
   saveSettings,
 } from "../settings.service";
+import { alertSettings } from "../alert-settings";
 
 /**
  * Platform settings, against the real database.
@@ -24,6 +25,10 @@ const TEST_KEYS = [
   "stripe.secretKey",
   "bkash.sandbox",
   "uploads.maxImageMb",
+  "alerts.soundEnabled",
+  "alerts.soundUrl",
+  "alerts.repeatSeconds",
+  "alerts.desktopNotifications",
 ];
 
 async function clear() {
@@ -153,5 +158,51 @@ describe("platform settings", () => {
       where: { key: "platform.name" },
     });
     expect(row?.updatedBy).toBe("operator@example.com");
+  });
+});
+
+/**
+ * Order alerts, which the operator now controls from /admin/settings.
+ *
+ * The interesting case is the repeat interval: 0 is a meaningful value
+ * there ("play once"), which is exactly the value getNumberSetting
+ * treats as unset — so this reads the raw setting instead, and these
+ * tests are what stop someone "simplifying" it back.
+ */
+describe("alert settings", () => {
+  it("defaults to sound and notifications on, playing once", () => {
+    const alerts = alertSettings();
+    expect(alerts.soundEnabled).toBe(true);
+    expect(alerts.desktopNotifications).toBe(true);
+    expect(alerts.repeatSeconds).toBe(0);
+    expect(alerts.soundUrl).toBe("/sounds/new-order.wav");
+  });
+
+  it("lets the operator silence the staff screens", async () => {
+    await saveSettings({ "alerts.soundEnabled": "false" }, "test@example.com");
+    expect(alertSettings().soundEnabled).toBe(false);
+  });
+
+  it("keeps an explicit 0 as play-once rather than falling back", async () => {
+    await saveSettings({ "alerts.repeatSeconds": "0" }, "test@example.com");
+    expect(alertSettings().repeatSeconds).toBe(0);
+  });
+
+  it("caps the repeat so a chime cannot be set to every second", async () => {
+    await saveSettings({ "alerts.repeatSeconds": "99999" }, "test@example.com");
+    expect(alertSettings().repeatSeconds).toBe(300);
+  });
+
+  it("ignores a nonsense repeat interval", async () => {
+    await saveSettings({ "alerts.repeatSeconds": "soon" }, "test@example.com");
+    expect(alertSettings().repeatSeconds).toBe(0);
+  });
+
+  it("falls back to the bundled chime when the URL is cleared", async () => {
+    await saveSettings({ "alerts.soundUrl": "/sounds/custom.mp3" }, "test@example.com");
+    expect(alertSettings().soundUrl).toBe("/sounds/custom.mp3");
+
+    await saveSettings({ "alerts.soundUrl": "" }, "test@example.com");
+    expect(alertSettings().soundUrl).toBe("/sounds/new-order.wav");
   });
 });

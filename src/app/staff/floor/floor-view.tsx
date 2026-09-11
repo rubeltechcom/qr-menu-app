@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import type { SerializedOrder } from "@/modules/orders/order.service";
 import { useLiveOrders } from "@/lib/use-live-orders";
-import { useOrderAlerts } from "@/lib/use-order-alerts";
+import { useOrderAlerts, type AlertPreferences } from "@/lib/use-order-alerts";
 import { StaffHeader } from "@/components/staff/staff-header";
 import { staffCompleteOrderAction } from "../kitchen/actions";
 
@@ -25,13 +25,16 @@ export function FloorView({
   tables,
   initialOrders,
   currency,
+  alerts,
 }: {
   locationId: string;
   tables: TableView[];
   initialOrders: SerializedOrder[];
   currency: string;
+  /** How the operator configured alerts in /admin/settings. */
+  alerts?: AlertPreferences;
 }) {
-  const { announce, isFullyArmed, enableAll } = useOrderAlerts();
+  const { announce, isFullyArmed, enableAll, setWaitingCount } = useOrderAlerts(alerts);
 
   const { orders, connection, patchOrder } = useLiveOrders({
     streamUrl: `/api/staff/realtime?locationId=${encodeURIComponent(locationId)}`,
@@ -59,6 +62,12 @@ export function FloorView({
   const counterOrders = byTable.get("__counter__") ?? [];
 
   const waitingCount = orders.filter((order) => order.status === "READY").length;
+
+  // For a waiter the nagging alert is about food going cold on the pass,
+  // so the repeat runs while anything is READY and unserved.
+  useEffect(() => {
+    setWaitingCount(waitingCount);
+  }, [waitingCount, setWaitingCount]);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">

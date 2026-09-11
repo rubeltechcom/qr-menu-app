@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import type { SerializedOrder } from "@/modules/orders/order.service";
-import { useOrderAlerts } from "@/lib/use-order-alerts";
+import { useOrderAlerts, type AlertPreferences } from "@/lib/use-order-alerts";
 import { RejectDialog } from "@/components/orders/reject-dialog";
 import { useLiveOrders } from "@/lib/use-live-orders";
 import {
@@ -35,15 +35,18 @@ export function OrderBoard({
   locationId,
   currency,
   initialOrders,
+  alerts,
 }: {
   tenantSlug: string;
   locationId: string;
   currency: string;
   initialOrders: SerializedOrder[];
+  /** How the operator configured alerts in /admin/settings. */
+  alerts?: AlertPreferences;
 }) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [hideCompleted, setHideCompleted] = useState(true);
-  const { announce, isFullyArmed, enableAll } = useOrderAlerts();
+  const { announce, isFullyArmed, enableAll, setWaitingCount } = useOrderAlerts(alerts);
 
   const { orders, connection, patchOrder } = useLiveOrders({
     streamUrl: `/api/realtime/orders?tenant=${encodeURIComponent(tenantSlug)}&locationId=${encodeURIComponent(locationId)}`,
@@ -59,6 +62,11 @@ export function OrderBoard({
   }, [orders, typeFilter, hideCompleted]);
 
   const openCount = orders.filter((order) => order.status === "PENDING").length;
+
+  // Keeps the repeat chime going while orders sit unaccepted.
+  useEffect(() => {
+    setWaitingCount(openCount);
+  }, [openCount, setWaitingCount]);
 
   // Mirror the pending count in the tab title, so a kitchen with the
   // board in a background tab still sees that something is waiting.

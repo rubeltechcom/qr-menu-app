@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import type { SerializedOrder } from "@/modules/orders/order.service";
 import { useLiveOrders } from "@/lib/use-live-orders";
-import { useOrderAlerts } from "@/lib/use-order-alerts";
+import { useOrderAlerts, type AlertPreferences } from "@/lib/use-order-alerts";
 import { StaffHeader } from "@/components/staff/staff-header";
 import { RejectDialog } from "@/components/orders/reject-dialog";
 import {
@@ -36,12 +36,15 @@ export function KitchenDisplay({
   locationId,
   currency,
   initialOrders,
+  alerts,
 }: {
   locationId: string;
   currency: string;
   initialOrders: SerializedOrder[];
+  /** How the operator configured alerts in /admin/settings. */
+  alerts?: AlertPreferences;
 }) {
-  const { announce, isFullyArmed, enableAll } = useOrderAlerts();
+  const { announce, isFullyArmed, enableAll, setWaitingCount } = useOrderAlerts(alerts);
 
   const { orders, connection, patchOrder } = useLiveOrders({
     streamUrl: `/api/staff/realtime?locationId=${encodeURIComponent(locationId)}`,
@@ -70,6 +73,12 @@ export function KitchenDisplay({
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
   const waiting = queue.filter((order) => order.status === "PENDING").length;
+
+  // Drives the repeat chime: it keeps sounding while tickets sit
+  // unaccepted and stops the moment the queue is cleared.
+  useEffect(() => {
+    setWaitingCount(waiting);
+  }, [waiting, setWaitingCount]);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">

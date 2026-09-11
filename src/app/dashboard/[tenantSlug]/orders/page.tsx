@@ -2,6 +2,8 @@ import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
 import * as locationRepo from "@/modules/locations/location.repository";
 import { listOrders } from "@/modules/orders/order.repository";
 import { serializeOrder } from "@/modules/orders/order.service";
+import { alertSettings } from "@/modules/platform/alert-settings";
+import { loadSettings, settingsLoaded } from "@/modules/platform/settings.service";
 import { OrderBoard } from "./order-board";
 
 /**
@@ -38,8 +40,12 @@ export default async function OrdersPage({
 
   const orders = await listOrders(db, { locationId: location.id, hideCompleted: false });
 
+  // How the operator configured alerts, resolved once on the server.
+  if (!settingsLoaded()) await loadSettings();
+
   return (
     <OrderBoard
+      alerts={alertSettings()}
       tenantSlug={tenantSlug}
       locationId={location.id}
       currency={location.currency}

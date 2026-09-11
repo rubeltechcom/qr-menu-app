@@ -11,7 +11,7 @@
  * has actually set.
  */
 
-export type SettingKind = "text" | "secret" | "boolean" | "number";
+export type SettingKind = "text" | "multiline" | "secret" | "boolean" | "number";
 
 export interface SettingDefinition {
   key: string;
@@ -53,9 +53,69 @@ export const SETTING_GROUPS: SettingGroup[] = [
       {
         key: "platform.demoTableCode",
         label: "Demo table code",
-        hint: "The table the landing page's “See a live demo” button opens.",
+        hint:
+          "The table the landing page's “See a live demo” button opens. Take it " +
+          "from any restaurant's Tables page. Leave blank and the button is " +
+          "hidden rather than leading to a dead link.",
         kind: "text",
         placeholder: "DEMO2345",
+      },
+    ],
+  },
+  {
+    id: "showcase",
+    title: "Example menus",
+    description:
+      "Real menus shown on the landing page, so a visitor can see the product " +
+      "before signing up. One per line: the table code, then a name. " +
+      "For example: DEMO2345 | Wagamama",
+    settings: [
+      {
+        key: "showcase.menus",
+        label: "Menus to show",
+        hint:
+          "Use tables from restaurants that are happy to be featured. Each one " +
+          "opens its live menu, so keep the list to menus that look good.",
+        kind: "multiline",
+        placeholder: "AB12CD34 | Riverside Kitchen",
+      },
+    ],
+  },
+  {
+    id: "alerts",
+    title: "Order alerts",
+    description:
+      "How staff are told a new order has arrived. Browsers require each " +
+      "device to grant sound and notification permission itself — that cannot " +
+      "be forced from here — but these control what happens once they have.",
+    settings: [
+      {
+        key: "alerts.soundEnabled",
+        label: "Play a sound for new orders",
+        hint: "Turn off to leave staff screens silent, notifications only.",
+        kind: "boolean",
+      },
+      {
+        key: "alerts.soundUrl",
+        label: "Alert sound",
+        hint: "A URL to a short audio file. Leave blank for the built-in chime.",
+        kind: "text",
+        placeholder: "/sounds/new-order.wav",
+      },
+      {
+        key: "alerts.repeatSeconds",
+        label: "Repeat the sound every (seconds)",
+        hint:
+          "Keeps sounding while an order sits unaccepted, for a noisy kitchen. " +
+          "0 plays once.",
+        kind: "number",
+        placeholder: "0",
+      },
+      {
+        key: "alerts.desktopNotifications",
+        label: "Show desktop notifications",
+        hint: "A popup even when the tab is behind another window.",
+        kind: "boolean",
       },
     ],
   },
@@ -216,7 +276,12 @@ export const SETTING_BY_KEY = new Map<string, SettingDefinition>(
 /** Defaults applied when neither the database nor the environment has a value. */
 export const SETTING_DEFAULTS: Record<string, string> = {
   "platform.name": "QR Menu",
-  "platform.demoTableCode": "DEMO2345",
+  // No demo code by default. The seeded DEMO2345 exists only on a
+  // developer's machine, so shipping it as a default sent every live
+  // install's "See a live demo" button to a 404.
+  "alerts.soundEnabled": "true",
+  "alerts.desktopNotifications": "true",
+  "alerts.repeatSeconds": "0",
   "uploads.maxImageMb": "8",
   "uploads.maxVideoMb": "20",
   "uploads.maxVideoSeconds": "15",
