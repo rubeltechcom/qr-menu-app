@@ -9,7 +9,7 @@ interface AdminLayoutProps {
   navItems: {
     label: string;
     href: string;
-    icon: React.ElementType;
+    icon: React.ReactNode;
     active?: boolean;
   }[];
   title: string;
@@ -56,7 +56,6 @@ export function AdminLayout({
         <nav className="min-h-0 flex-1 overflow-y-auto p-4">
           <div className="flex flex-col gap-1">
             {navItems.map((item) => {
-              const Icon = item.icon;
               const isRootHref = item.href === "/admin" || /^\/dashboard\/[^/]+$/.test(item.href);
               const isActive = item.active ?? (isRootHref ? pathname === item.href : pathname.startsWith(item.href));
 
@@ -70,7 +69,7 @@ export function AdminLayout({
                       : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  {item.icon}
                   {item.label}
                 </Link>
               );

@@ -14,17 +14,17 @@ export default async function PlatformAdminLayout({
     {
       label: "Platform Overview",
       href: "/admin",
-      icon: Shield,
+      icon: <Shield className="h-4 w-4" />,
     },
     {
       label: "Settings",
       href: "/admin/settings",
-      icon: SlidersHorizontal,
+      icon: <SlidersHorizontal className="h-4 w-4" />,
     },
     {
       label: "Diagnostics",
       href: "/admin/diagnostics",
-      icon: Stethoscope,
+      icon: <Stethoscope className="h-4 w-4" />,
     },
   ];
 

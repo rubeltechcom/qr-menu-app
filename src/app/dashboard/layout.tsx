@@ -41,44 +41,44 @@ export default async function DashboardRootLayout({
         {
           label: "Overview",
           href: `/dashboard/${slug}`,
-          icon: LayoutDashboard,
+          icon: <LayoutDashboard className="h-4 w-4" />,
         },
         {
           label: "Menu",
           href: `/dashboard/${slug}/menu`,
-          icon: UtensilsCrossed,
+          icon: <UtensilsCrossed className="h-4 w-4" />,
         },
         {
           label: "Orders",
           href: `/dashboard/${slug}/orders`,
-          icon: ReceiptText,
+          icon: <ReceiptText className="h-4 w-4" />,
         },
         {
           label: "Tables",
           href: `/dashboard/${slug}/tables`,
-          icon: QrCode,
+          icon: <QrCode className="h-4 w-4" />,
         },
         {
           label: "Payments",
           href: `/dashboard/${slug}/payments`,
-          icon: CreditCard,
+          icon: <CreditCard className="h-4 w-4" />,
         },
         {
           label: "Billing",
           href: `/dashboard/${slug}/billing`,
-          icon: Receipt,
+          icon: <Receipt className="h-4 w-4" />,
         },
         {
           label: "Settings",
           href: `/dashboard/${slug}/settings`,
-          icon: SlidersHorizontal,
+          icon: <SlidersHorizontal className="h-4 w-4" />,
         },
       ]
     : [
         {
           label: "My Restaurants",
           href: "/dashboard",
-          icon: LayoutDashboard,
+          icon: <LayoutDashboard className="h-4 w-4" />,
         },
       ];
 
