@@ -7,6 +7,8 @@ import {
   setTenantSuspended,
 } from "@/modules/platform/platform.repository";
 import { PLAN_IDS, type PlanId } from "@/modules/billing/plans";
+import { signUp, SignUpError } from "@/modules/auth/signup.service";
+import { ZodError } from "zod";
 
 /**
  * Platform admin actions.
@@ -82,4 +84,58 @@ export async function changeTenantPlanAction(
   revalidatePath("/admin");
   revalidatePath("/admin/tenants", "layout");
   return { ok: true };
+}
+
+export interface CreateTenantState {
+  ok?: boolean;
+  error?: string;
+  createdSlug?: string;
+}
+
+/**
+ * Create a restaurant and its owner account by hand.
+ *
+ * For the cases self-signup does not cover: onboarding a customer who
+ * was sold over the phone, or recreating an account for someone who
+ * cannot complete the form themselves.
+ *
+ * Deliberately goes through the same signUp() the public form uses, so
+ * an operator-created restaurant is identical to a self-served one —
+ * same validation, same owner membership, same slug rules. A second
+ * path here would be a second set of bugs.
+ *
+ * The operator sets the password and passes it on; there is no email
+ * yet, and inventing a "temporary" password the owner cannot change
+ * would be worse than telling them one they must.
+ */
+export async function createTenantAction(
+  _prevState: CreateTenantState,
+  formData: FormData,
+): Promise<CreateTenantState> {
+  await requireSuperadmin();
+
+  try {
+    const { tenant } = await signUp({
+      name: String(formData.get("ownerName") ?? "").trim(),
+      email: String(formData.get("email") ?? "")
+        .trim()
+        .toLowerCase(),
+      password: String(formData.get("password") ?? ""),
+      restaurantName: String(formData.get("restaurantName") ?? "").trim(),
+      slug: String(formData.get("slug") ?? "").trim(),
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/tenants");
+    return { ok: true, createdSlug: tenant.slug };
+  } catch (error) {
+    if (error instanceof SignUpError) {
+      return { error: error.message };
+    }
+    if (error instanceof ZodError) {
+      return { error: error.issues[0]?.message ?? "Please check the form." };
+    }
+    console.error("[admin] failed to create tenant", error);
+    return { error: "Could not create that restaurant. Please try again." };
+  }
 }

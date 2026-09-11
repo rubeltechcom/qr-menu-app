@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Pricing } from "@/components/marketing/pricing";
+import { pricingProps } from "@/modules/platform/pricing-props";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -8,10 +9,12 @@ export const metadata: Metadata = {
     "Start free with a QR menu for one location and unlimited orders. Upgrade for more locations, translations and your own domain.",
 };
 
-export default function PricingPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PricingPage() {
   return (
     <>
-      <Pricing />
+      <Pricing {...await pricingProps()} />
 
       <section className="border-t border-zinc-200 bg-zinc-50">
         <div className="mx-auto max-w-3xl px-6 py-16 text-center">

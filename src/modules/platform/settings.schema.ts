@@ -50,16 +50,6 @@ export const SETTING_GROUPS: SettingGroup[] = [
         kind: "text",
         placeholder: "support@example.com",
       },
-      {
-        key: "platform.demoTableCode",
-        label: "Demo table code",
-        hint:
-          "The table the landing page's “See a live demo” button opens. Take it " +
-          "from any restaurant's Tables page. Leave blank and the button is " +
-          "hidden rather than leading to a dead link.",
-        kind: "text",
-        placeholder: "DEMO2345",
-      },
     ],
   },
   {
@@ -70,6 +60,16 @@ export const SETTING_GROUPS: SettingGroup[] = [
       "before signing up. One per line: the table code, then a name. " +
       "For example: DEMO2345 | Wagamama",
     settings: [
+      {
+        key: "platform.demoTableCode",
+        label: "Demo table code",
+        hint:
+          "The table the landing page's “See a live demo” button opens. Take it " +
+          "from any restaurant's Tables page. Leave blank and the button is " +
+          "hidden rather than leading to a dead link.",
+        kind: "text",
+        placeholder: "DEMO2345",
+      },
       {
         key: "showcase.menus",
         label: "Menus to show",
@@ -116,6 +116,48 @@ export const SETTING_GROUPS: SettingGroup[] = [
         label: "Show desktop notifications",
         hint: "A popup even when the tab is behind another window.",
         kind: "boolean",
+      },
+    ],
+  },
+  {
+    id: "pricing",
+    title: "Plan pricing",
+    description:
+      "What each plan costs, in whole units of your currency. Blank keeps " +
+      "the built-in price. Changing a price here changes what the pricing " +
+      "page advertises — it does NOT change what existing subscribers are " +
+      "billed, which is set by the Stripe price they signed up on.",
+    settings: [
+      {
+        key: "pricing.currencySymbol",
+        label: "Currency symbol",
+        hint: "Shown before the amount on the pricing page.",
+        kind: "text",
+        placeholder: "$",
+      },
+      {
+        key: "pricing.smartMonthly",
+        label: "Smart — per month",
+        kind: "number",
+        placeholder: "20",
+      },
+      {
+        key: "pricing.smartYearly",
+        label: "Smart — per year",
+        kind: "number",
+        placeholder: "200",
+      },
+      {
+        key: "pricing.proMonthly",
+        label: "Pro — per month",
+        kind: "number",
+        placeholder: "40",
+      },
+      {
+        key: "pricing.proYearly",
+        label: "Pro — per year",
+        kind: "number",
+        placeholder: "400",
       },
     ],
   },
@@ -246,7 +288,9 @@ export const SETTING_GROUPS: SettingGroup[] = [
   {
     id: "email",
     title: "Email",
-    description: "Used for receipts and account emails.",
+    description:
+      "Used for receipts and account emails. Set either Resend or SMTP — " +
+      "Resend is used when both are configured.",
     settings: [
       {
         key: "email.resendApiKey",
@@ -258,9 +302,59 @@ export const SETTING_GROUPS: SettingGroup[] = [
       {
         key: "email.from",
         label: "From address",
+        hint: "The address recipients see. Must be a domain you have verified.",
         kind: "text",
         envVar: "EMAIL_FROM",
         placeholder: "QR Menu <hello@example.com>",
+      },
+      {
+        key: "email.replyTo",
+        label: "Reply-to address",
+        hint: "Where replies go, if different from the sender.",
+        kind: "text",
+        placeholder: "support@example.com",
+      },
+    ],
+  },
+  {
+    id: "smtp",
+    title: "SMTP server",
+    description:
+      "An alternative to Resend, for an operator who would rather send " +
+      "through their own mail server. Ignored when a Resend key is set.",
+    settings: [
+      {
+        key: "smtp.host",
+        label: "Host",
+        kind: "text",
+        envVar: "SMTP_HOST",
+        placeholder: "smtp.example.com",
+      },
+      {
+        key: "smtp.port",
+        label: "Port",
+        hint: "587 for STARTTLS, 465 for implicit TLS.",
+        kind: "number",
+        envVar: "SMTP_PORT",
+        placeholder: "587",
+      },
+      {
+        key: "smtp.user",
+        label: "Username",
+        kind: "text",
+        envVar: "SMTP_USER",
+      },
+      {
+        key: "smtp.password",
+        label: "Password",
+        kind: "secret",
+        envVar: "SMTP_PASSWORD",
+      },
+      {
+        key: "smtp.secure",
+        label: "Implicit TLS",
+        hint: "On for port 465. Off for 587, which upgrades with STARTTLS.",
+        kind: "boolean",
       },
     ],
   },

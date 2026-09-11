@@ -8,16 +8,25 @@ import { PLANS, PLAN_IDS, type Plan } from "@/modules/billing/plans";
 /**
  * The public pricing table.
  *
- * Every figure is read from src/modules/billing/plans.ts — the same
- * object the dashboard enforces limits with. A price or a limit stated
- * here that the product did not actually deliver would be worse than no
- * pricing page, so there is deliberately nowhere to type one.
+ * Every limit and feature is read from src/modules/billing/plans.ts —
+ * the same object the dashboard enforces with. A limit stated here that
+ * the product did not deliver would be worse than no pricing page, so
+ * there is deliberately nowhere to type one.
+ *
+ * Prices are the one exception: they come in as props, because an
+ * operator can override them from /admin/plans to sell in their own
+ * currency. Everything else still comes from the enforcing object.
  */
 
-function priceLabel(plan: Plan, yearly: boolean): string {
-  const cents = yearly ? plan.yearlyPriceCents : plan.monthlyPriceCents;
+export interface PriceOverride {
+  monthlyCents: number | null;
+  yearlyCents: number | null;
+}
+
+function priceLabel(price: PriceOverride, yearly: boolean, symbol: string): string {
+  const cents = yearly ? price.yearlyCents : price.monthlyCents;
   if (cents === null) return "Free";
-  return `$${Math.round(cents / 100)}`;
+  return `${symbol}${Math.round(cents / 100)}`;
 }
 
 /** What a plan includes, phrased for a restaurant owner. */
@@ -69,7 +78,16 @@ function benefits(plan: Plan): string[] {
   return lines;
 }
 
-export function Pricing({ id = "pricing" }: { id?: string }) {
+export function Pricing({
+  id = "pricing",
+  prices,
+  currencySymbol = "$",
+}: {
+  id?: string;
+  /** Operator overrides, keyed by plan id. Falls back to plans.ts. */
+  prices?: Partial<Record<string, PriceOverride>>;
+  currencySymbol?: string;
+}) {
   const [yearly, setYearly] = useState(false);
 
   return (
@@ -114,6 +132,10 @@ export function Pricing({ id = "pricing" }: { id?: string }) {
       <div className="mt-12 grid gap-6 lg:grid-cols-3">
         {PLAN_IDS.map((id) => {
           const plan = PLANS[id];
+          const price: PriceOverride = prices?.[id] ?? {
+            monthlyCents: plan.monthlyPriceCents,
+            yearlyCents: plan.yearlyPriceCents,
+          };
           // Smart is the one most restaurants land on, so it leads.
           const featured = plan.id === "SMART";
 
@@ -136,9 +158,9 @@ export function Pricing({ id = "pricing" }: { id?: string }) {
 
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-4xl font-bold tracking-tight text-zinc-900">
-                  {priceLabel(plan, yearly)}
+                  {priceLabel(price, yearly, currencySymbol)}
                 </span>
-                {plan.monthlyPriceCents !== null && (
+                {price.monthlyCents !== null && (
                   <span className="text-sm font-medium text-zinc-500">
                     /{yearly ? "year" : "month"}
                   </span>
@@ -153,9 +175,7 @@ export function Pricing({ id = "pricing" }: { id?: string }) {
                     : "border border-zinc-300 text-zinc-900 hover:bg-zinc-50"
                 }`}
               >
-                {plan.monthlyPriceCents === null
-                  ? "Create free menu"
-                  : `Choose ${plan.name}`}
+                {price.monthlyCents === null ? "Create free menu" : `Choose ${plan.name}`}
               </Link>
 
               <ul className="mt-8 flex flex-col gap-3">

@@ -10,6 +10,7 @@ import {
   Truck,
 } from "lucide-react";
 import { Pricing } from "@/components/marketing/pricing";
+import { pricingProps } from "@/modules/platform/pricing-props";
 import {
   getSetting,
   loadSettings,
@@ -375,7 +376,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      <Pricing />
+      <Pricing {...await pricingProps()} />
 
       {/* FAQ */}
       <section className="border-t border-zinc-200 bg-zinc-50">
