@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { verifyAndRecord } from "@/modules/payments/payment.service";
+import { AutoRefresh } from "./auto-refresh";
 
 /**
  * Where a diner lands after paying.
@@ -98,7 +99,7 @@ function PaymentMessage({
 }) {
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col items-center justify-center px-6 text-center">
-      {refreshSeconds && <meta httpEquiv="refresh" content={String(refreshSeconds)} />}
+      {refreshSeconds ? <AutoRefresh seconds={refreshSeconds} /> : null}
       <h1 className="text-2xl font-semibold text-zinc-900">{title}</h1>
       <p className="mt-2 text-sm text-zinc-600">{detail}</p>
       <a
