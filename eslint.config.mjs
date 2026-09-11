@@ -69,6 +69,17 @@ const eslintConfig = defineConfig([
       // disabling RLS — see the platform_admin_read migration — and is
       // reachable only behind requireSuperadmin().
       "src/modules/platform/platform.repository.ts",
+      // Platform-wide configuration has no tenantId to scope by, and is
+      // read at boot before any request — let alone any tenant — exists.
+      // The table carries no tenant data; access is gated by
+      // requireSuperadmin() on the only surface that writes it.
+      "src/modules/platform/settings.service.ts",
+      // Staff sign in with a restaurant slug and a PIN, holding no
+      // session and no tenant, so both reads happen through a narrow
+      // SELECT-only RLS window gated on transaction-local GUCs — see
+      // the staff_login_lookup migration.
+      "src/modules/auth/staff-login.repository.ts",
+      "src/modules/auth/staff-pin.service.ts",
     ],
     rules: {
       // The @typescript-eslint variant, not the base rule — only it

@@ -155,6 +155,28 @@ model AuditLog {
 // Storefront content (skeleton — extended in Phase 2)
 // ---------------------------------------------------------------------------
 
+/// Platform-wide configuration the operator edits from /admin, rather
+/// than by changing environment variables and redeploying.
+///
+/// One row per setting key. Values are strings because that is what an
+/// environment variable is — the settings module parses and validates
+/// them, so this table stays a dumb store and cannot drift from the
+/// schema that reads it.
+///
+/// A secret value (`isSecret`) is encrypted at rest, so a database dump
+/// or a stolen backup does not hand over live payment credentials.
+model PlatformSetting {
+  key       String   @id
+  value     String
+  isSecret  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  /// Who last changed it — an audit trail for the one account that can
+  /// reconfigure the whole platform.
+  updatedBy String?
+
+  @@map("platform_settings")
+}
+
 model Location {
   id        String    @id @default(cuid())
   tenantId  String
@@ -237,7 +259,13 @@ model MenuItem {
   // Money stored as an integer in the currency's minor unit (cents),
   // per PROMPT.md §4's money rule — never a float.
   basePriceCents Int
+  // Up to five, shown as a gallery on the storefront. The first is the
+  // one the menu grid uses.
   images         String[]        @default([])
+  /// One short clip, shown before the photos. Kept separate from
+  /// `images` rather than mixed into it so every consumer knows which
+  /// one needs a <video> element without sniffing file extensions.
+  videoUrl       String?
   allergens      String[]        @default([])
   dietaryTags    String[]        @default([])
   calories       Int?

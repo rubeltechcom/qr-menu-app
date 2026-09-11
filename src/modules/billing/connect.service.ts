@@ -1,6 +1,6 @@
-import Stripe from "stripe";
-import { env } from "@/lib/env";
+import type Stripe from "stripe";
 import { rawPrisma } from "@/server/db/client";
+import { isStripeConfigured, stripeClient } from "@/modules/payments/stripe-client";
 
 /**
  * Stripe Connect onboarding — how a restaurant gets paid.
@@ -15,18 +15,12 @@ import { rawPrisma } from "@/server/db/client";
  * narrowed to one tenant id the caller already established.
  */
 
-let client: Stripe | null = null;
-
 function stripe(): Stripe {
-  if (!env.STRIPE_SECRET_KEY) {
-    throw new Error("Stripe is not configured on this installation.");
-  }
-  client ??= new Stripe(env.STRIPE_SECRET_KEY);
-  return client;
+  return stripeClient();
 }
 
 export function isConnectConfigured(): boolean {
-  return Boolean(env.STRIPE_SECRET_KEY);
+  return isStripeConfigured();
 }
 
 /**

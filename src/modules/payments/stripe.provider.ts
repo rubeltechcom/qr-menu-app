@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { env } from "@/lib/env";
+import { getSetting } from "@/modules/platform/settings.service";
 import type {
   CreatePaymentParams,
   CreatePaymentResult,
@@ -20,14 +20,24 @@ import type {
  */
 
 let client: Stripe | null = null;
+let clientKey: string | null = null;
+
+/** The key in use, from the admin panel or the environment. */
+function secretKey(): string | undefined {
+  return getSetting("stripe.secretKey");
+}
 
 function stripe(): Stripe {
-  if (!env.STRIPE_SECRET_KEY) {
-    throw new Error("STRIPE_SECRET_KEY is not configured.");
+  const key = secretKey();
+  if (!key) {
+    throw new Error("Stripe is not configured. Add a secret key in the admin settings.");
   }
-  // Lazily constructed so importing this module does not blow up an
-  // install that has no Stripe keys yet.
-  client ??= new Stripe(env.STRIPE_SECRET_KEY);
+  // Rebuilt when the key changes, so saving a new key in the admin
+  // panel takes effect without a redeploy.
+  if (!client || clientKey !== key) {
+    client = new Stripe(key);
+    clientKey = key;
+  }
   return client;
 }
 
@@ -36,7 +46,7 @@ export const stripeProvider: PaymentProvider = {
   displayName: "Card",
 
   isConfigured() {
-    return Boolean(env.STRIPE_SECRET_KEY);
+    return Boolean(secretKey());
   },
 
   async createPayment(params: CreatePaymentParams): Promise<CreatePaymentResult> {
@@ -147,7 +157,8 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async parseWebhook({ rawBody, headers }): Promise<NormalisedWebhook | null> {
-    if (!env.STRIPE_WEBHOOK_SECRET) return null;
+    const webhookSecret = getSetting("stripe.webhookSecret");
+    if (!webhookSecret) return null;
 
     const signature = headers.get("stripe-signature");
     if (!signature) return null;
@@ -156,11 +167,7 @@ export const stripeProvider: PaymentProvider = {
     try {
       // Signature verification against the RAW body — parsing first
       // would change the bytes and break the check.
-      event = stripe().webhooks.constructEvent(
-        rawBody,
-        signature,
-        env.STRIPE_WEBHOOK_SECRET,
-      );
+      event = stripe().webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch {
       // Bad signature: the caller responds 400 without touching it.
       return null;

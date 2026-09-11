@@ -1,7 +1,8 @@
 import type { NextRequest } from "next/server";
-import Stripe from "stripe";
-import { env } from "@/lib/env";
+import type Stripe from "stripe";
 import { rawPrisma } from "@/server/db/client";
+import { getSetting } from "@/modules/platform/settings.service";
+import { isStripeConfigured, stripeClient } from "@/modules/payments/stripe-client";
 import {
   applySubscriptionState,
   downgradeToFree,
@@ -28,7 +29,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  if (!env.STRIPE_SECRET_KEY || !env.STRIPE_WEBHOOK_SECRET) {
+  const webhookSecret = getSetting("stripe.webhookSecret");
+  if (!isStripeConfigured() || !webhookSecret) {
     return new Response("Billing is not configured.", { status: 503 });
   }
 
@@ -39,11 +41,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = new Stripe(env.STRIPE_SECRET_KEY).webhooks.constructEvent(
-      rawBody,
-      signature,
-      env.STRIPE_WEBHOOK_SECRET,
-    );
+    event = stripeClient().webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch {
     // Never log the body on a bad signature — it is unverified input.
     return new Response("Invalid signature", { status: 400 });

@@ -1,6 +1,7 @@
-import Stripe from "stripe";
-import { env } from "@/lib/env";
+import type Stripe from "stripe";
 import { rawPrisma } from "@/server/db/client";
+import { getSetting } from "@/modules/platform/settings.service";
+import { isStripeConfigured, stripeClient } from "@/modules/payments/stripe-client";
 import { PLANS, type PlanId } from "./plans";
 
 /**
@@ -18,18 +19,15 @@ import { PLANS, type PlanId } from "./plans";
 
 export class BillingError extends Error {}
 
-let client: Stripe | null = null;
-
 function stripe(): Stripe {
-  if (!env.STRIPE_SECRET_KEY) {
+  if (!isStripeConfigured()) {
     throw new BillingError("Billing is not configured on this installation.");
   }
-  client ??= new Stripe(env.STRIPE_SECRET_KEY);
-  return client;
+  return stripeClient();
 }
 
 export function isBillingConfigured(): boolean {
-  return Boolean(env.STRIPE_SECRET_KEY);
+  return isStripeConfigured();
 }
 
 export type BillingCycle = "monthly" | "yearly";
@@ -40,10 +38,10 @@ export function priceIdFor(plan: PlanId, cycle: BillingCycle): string | null {
   const key = `${plan}_${cycle}` as const;
   return (
     {
-      SMART_monthly: env.STRIPE_PRICE_SMART_MONTHLY,
-      SMART_yearly: env.STRIPE_PRICE_SMART_YEARLY,
-      PRO_monthly: env.STRIPE_PRICE_PRO_MONTHLY,
-      PRO_yearly: env.STRIPE_PRICE_PRO_YEARLY,
+      SMART_monthly: getSetting("stripe.priceSmartMonthly"),
+      SMART_yearly: getSetting("stripe.priceSmartYearly"),
+      PRO_monthly: getSetting("stripe.priceProMonthly"),
+      PRO_yearly: getSetting("stripe.priceProYearly"),
     }[key] ?? null
   );
 }
@@ -251,9 +249,9 @@ export async function downgradeToFree(tenantId: string): Promise<void> {
 
 /** Which plan a Stripe price id corresponds to. */
 export function planForPriceId(priceId: string): PlanId | null {
-  if (priceId === env.STRIPE_PRICE_SMART_MONTHLY) return "SMART";
-  if (priceId === env.STRIPE_PRICE_SMART_YEARLY) return "SMART";
-  if (priceId === env.STRIPE_PRICE_PRO_MONTHLY) return "PRO";
-  if (priceId === env.STRIPE_PRICE_PRO_YEARLY) return "PRO";
+  if (priceId === getSetting("stripe.priceSmartMonthly")) return "SMART";
+  if (priceId === getSetting("stripe.priceSmartYearly")) return "SMART";
+  if (priceId === getSetting("stripe.priceProMonthly")) return "PRO";
+  if (priceId === getSetting("stripe.priceProYearly")) return "PRO";
   return null;
 }

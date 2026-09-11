@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { getBooleanSetting, getSetting } from "@/modules/platform/settings.service";
 import type {
   CreatePaymentParams,
   CreatePaymentResult,
@@ -34,8 +34,20 @@ import type {
 const SANDBOX_BASE = "https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized/checkout";
 const LIVE_BASE = "https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized/checkout";
 
+/** Credentials, from the admin panel or the environment. */
+function credentials() {
+  return {
+    appKey: getSetting("bkash.appKey"),
+    appSecret: getSetting("bkash.appSecret"),
+    username: getSetting("bkash.username"),
+    password: getSetting("bkash.password"),
+  };
+}
+
 function baseUrl(): string {
-  return env.BKASH_SANDBOX ? SANDBOX_BASE : LIVE_BASE;
+  // Defaults to sandbox: pointing at live money should be a deliberate
+  // act, never something an unset value does for you.
+  return getBooleanSetting("bkash.sandbox", true) ? SANDBOX_BASE : LIVE_BASE;
 }
 
 /**
@@ -53,8 +65,9 @@ async function grantToken(): Promise<string> {
     return cachedToken.token;
   }
 
-  if (!env.BKASH_APP_KEY || !env.BKASH_APP_SECRET || !env.BKASH_USERNAME || !env.BKASH_PASSWORD) {
-    throw new Error("bKash credentials are not configured.");
+  const { appKey, appSecret, username, password } = credentials();
+  if (!appKey || !appSecret || !username || !password) {
+    throw new Error("bKash is not configured. Add its credentials in the admin settings.");
   }
 
   const response = await fetch(`${baseUrl()}/token/grant`, {
@@ -62,12 +75,12 @@ async function grantToken(): Promise<string> {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      username: env.BKASH_USERNAME,
-      password: env.BKASH_PASSWORD,
+      username,
+      password,
     },
     body: JSON.stringify({
-      app_key: env.BKASH_APP_KEY,
-      app_secret: env.BKASH_APP_SECRET,
+      app_key: appKey,
+      app_secret: appSecret,
     }),
   });
 
@@ -96,7 +109,7 @@ async function bkashFetch<T>(path: string, payload: unknown): Promise<T> {
       "Content-Type": "application/json",
       Accept: "application/json",
       Authorization: token,
-      "X-APP-Key": env.BKASH_APP_KEY ?? "",
+      "X-APP-Key": credentials().appKey ?? "",
     },
     body: JSON.stringify(payload),
   });
@@ -135,9 +148,8 @@ export const bkashProvider: PaymentProvider = {
   displayName: "bKash",
 
   isConfigured() {
-    return Boolean(
-      env.BKASH_APP_KEY && env.BKASH_APP_SECRET && env.BKASH_USERNAME && env.BKASH_PASSWORD,
-    );
+    const { appKey, appSecret, username, password } = credentials();
+    return Boolean(appKey && appSecret && username && password);
   },
 
   async createPayment(params: CreatePaymentParams): Promise<CreatePaymentResult> {

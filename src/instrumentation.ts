@@ -13,6 +13,13 @@ export async function register() {
   // loads this file too and must skip it.
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // Platform settings first: the payment providers read them
+  // synchronously, so the snapshot has to be warm before any request
+  // is served. A failure here is logged and falls back to environment
+  // variables rather than stopping the server.
+  const { loadSettings } = await import("@/modules/platform/settings.service");
+  await loadSettings();
+
   const { assertStorageWritable, describeStorage } = await import("@/modules/storage/registry");
 
   try {
