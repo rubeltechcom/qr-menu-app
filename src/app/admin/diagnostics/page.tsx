@@ -1,4 +1,4 @@
-import { mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { requireSuperadmin } from "@/lib/require-superadmin";
@@ -25,6 +25,71 @@ interface Check {
   status: Status;
   detail: string;
   fix?: string;
+}
+
+/**
+ * Whether the upload directory survives a redeploy.
+ *
+ * In a container this is the difference between a working install and
+ * one that silently destroys every photo on the next deploy — the
+ * database rows survive, so the menu simply fills with broken images and
+ * nobody notices for weeks.
+ *
+ * /proc/mounts is the kernel's own list of what is mounted where, so a
+ * volume can be confirmed rather than inferred. A path that is a mount
+ * point, or lives under one, is backed by something outside the
+ * container's writable layer.
+ */
+async function checkPersistence(root: string): Promise<Check> {
+  const inContainer = process.platform === "linux";
+
+  if (inContainer) {
+    try {
+      const mounts = await readFile("/proc/mounts", "utf8");
+      const mountPoints = mounts
+        .split("\n")
+        .map((line) => line.split(" ")[1])
+        .filter((point): point is string => Boolean(point));
+
+      const isMounted = mountPoints.some(
+        (point) => point !== "/" && (root === point || root.startsWith(`${point}/`)),
+      );
+
+      if (isMounted) {
+        return {
+          label: "Persistent across redeploys",
+          status: "ok",
+          detail: `${root} is on a mounted volume. Photos survive a redeploy.`,
+        };
+      }
+
+      return {
+        label: "Persistent across redeploys",
+        status: "fail",
+        detail: `${root} is NOT on a mounted volume.`,
+        fix:
+          "Every uploaded photo will be destroyed by the next redeploy. In " +
+          "Coolify: Storages → Add → Volume Mount, with destination " +
+          `${root}. Then redeploy. Photos uploaded before that are lost, so ` +
+          "re-upload them afterwards.",
+      };
+    } catch {
+      // /proc unreadable — fall through to the heuristic below.
+    }
+  }
+
+  const insideApp = root.startsWith(path.resolve(process.cwd()) + path.sep);
+  return {
+    label: "Persistent across redeploys",
+    status: insideApp ? "warn" : "ok",
+    detail: insideApp
+      ? `${root} is inside the application directory.`
+      : `${root} is outside the application directory.`,
+    fix: insideApp
+      ? "If this is a container, that is almost certainly not a mounted " +
+        "volume, and uploaded photos will be lost on the next redeploy."
+      : undefined,
+  };
 }
 
 async function checkUploads(): Promise<Check[]> {
@@ -88,22 +153,15 @@ async function checkUploads(): Promise<Check[]> {
     });
   }
 
-  // Is it persistent? A path inside the app directory is almost
-  // certainly the container's own filesystem, not a mounted volume —
-  // which means every redeploy silently destroys every photo.
-  const insideApp = root.startsWith(path.resolve(process.cwd()) + path.sep);
-  checks.push({
-    label: "Persistent across redeploys",
-    status: insideApp ? "warn" : "ok",
-    detail: insideApp
-      ? `${root} is inside the application directory.`
-      : "The upload directory is outside the application directory.",
-    fix: insideApp
-      ? "This is probably NOT a mounted volume, so uploaded photos will be " +
-        "lost on the next redeploy. Add a Coolify volume (e.g. /data/uploads) " +
-        "and set UPLOAD_DIR to it."
-      : undefined,
-  });
+  // Is it persistent?
+  //
+  // The question that actually matters, and the one an operator cannot
+  // answer by looking at the app. On Linux the kernel lists every mount
+  // in /proc/mounts, so a real volume can be confirmed rather than
+  // guessed at from the path. Elsewhere (a developer's machine) fall
+  // back to the weaker "is it outside the app directory" heuristic.
+  const persistence = await checkPersistence(root);
+  checks.push(persistence);
 
   // How much is actually stored — a quick sanity check that files are
   // landing where they are expected to.

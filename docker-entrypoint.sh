@@ -30,6 +30,39 @@
 
 set -e
 
+# The upload directory has to exist and be writable before the server
+# starts taking photos.
+#
+# Docker copies the image's ownership into a *named* volume the first
+# time it is mounted empty, which is the happy path. It does not do that
+# for a bind mount, or for a volume that already has content — both come
+# back root-owned, and the app runs as `node`, so the first upload would
+# fail with EACCES.
+#
+# This cannot chown the directory itself: the container has already
+# dropped to an unprivileged user by the time the entrypoint runs. What
+# it can do is say so clearly, naming the fix, instead of leaving a
+# restaurant to discover it when a photo silently fails to save.
+UPLOAD_DIR="${UPLOAD_DIR:-/data/uploads}"
+
+if ! mkdir -p "$UPLOAD_DIR" 2>/dev/null; then
+  echo "[deploy] WARNING: cannot create ${UPLOAD_DIR}."
+fi
+
+if [ -w "$UPLOAD_DIR" ]; then
+  echo "[deploy] Uploads directory ${UPLOAD_DIR} is writable."
+else
+  echo "[deploy] ================================================================"
+  echo "[deploy] WARNING: ${UPLOAD_DIR} is NOT writable by this container."
+  echo "[deploy]"
+  echo "[deploy] Photo uploads will fail. The volume is most likely owned by"
+  echo "[deploy] root while the app runs as the 'node' user (uid 1000)."
+  echo "[deploy]"
+  echo "[deploy] Fix from the host:"
+  echo "[deploy]   docker run --rm -v <volume-name>:/data alpine chown -R 1000:1000 /data"
+  echo "[deploy] ================================================================"
+fi
+
 echo "[deploy] Applying database migrations…"
 
 # Retry briefly: Postgres and the app often start together, and the
