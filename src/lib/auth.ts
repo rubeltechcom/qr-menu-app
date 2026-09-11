@@ -2,8 +2,16 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { verifyPassword } from "@/lib/password";
-import { findUserByEmail } from "@/modules/users/user.repository";
+import {
+  findOrCreateFederatedUser,
+  findUserByEmail,
+} from "@/modules/users/user.repository";
 import { env } from "@/lib/env";
+import {
+  getSetting,
+  loadSettings,
+  settingsLoaded,
+} from "@/modules/platform/settings.service";
 
 /**
  * Auth.js configuration for restaurant owners/managers (Credentials +
@@ -17,7 +25,39 @@ import { env } from "@/lib/env";
  * are added, per PROMPT.md §2 ("Auth.js (NextAuth v5) with database
  * sessions").
  */
-export const { handlers, signIn, signOut, auth } = NextAuth({
+/**
+ * Whether Google sign-in is usable, and with which credentials.
+ *
+ * Read from platform settings with the environment as the fallback, so
+ * an operator can turn Google on from /admin without a redeploy. Shared
+ * with the login and signup pages, which hide the button when this
+ * returns null — a button that opens a Google error page is worse than
+ * no button, and the operator would not see it themselves.
+ */
+export async function googleCredentials(): Promise<{
+  id: string;
+  secret: string;
+} | null> {
+  // The settings snapshot is per-process and is warmed by
+  // instrumentation.ts, but /api/auth/* can be served by a worker that
+  // has not done that yet — which showed up as the button rendering
+  // while Google was missing from the provider list, so clicking it
+  // failed. Loading here makes the auth route independent of boot order.
+  if (!settingsLoaded()) await loadSettings();
+
+  const id = getSetting("google.clientId")?.trim() || env.GOOGLE_CLIENT_ID;
+  const secret = getSetting("google.clientSecret")?.trim() || env.GOOGLE_CLIENT_SECRET;
+
+  return id && secret ? { id, secret } : null;
+}
+
+// A function config rather than an object: it is evaluated per request,
+// which is what lets the Google credentials come from the settings
+// table. An object literal would be built when this module is first
+// imported — possibly before instrumentation.ts has loaded settings —
+// and would then be frozen for the life of the process, so turning
+// Google on in the admin panel would do nothing until a redeploy.
+export const { handlers, signIn, signOut, auth } = NextAuth(async () => ({
   // Auth.js refuses to serve any endpoint on a host it does not trust, to
   // stop a spoofed Host header pointing a callback somewhere else. In dev
   // it trusts localhost implicitly, so a missing setting only shows up in
@@ -63,16 +103,48 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return { id: user.id, email: user.email, name: user.name };
       },
     }),
-    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-      ? [
-          Google({
-            clientId: env.GOOGLE_CLIENT_ID,
-            clientSecret: env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
+    ...(await (async () => {
+      const google = await googleCredentials();
+      return google ? [Google({ clientId: google.id, clientSecret: google.secret })] : [];
+    })()),
   ],
   callbacks: {
+    /**
+     * Turns a Google identity into one of our users.
+     *
+     * Without this, a Google sign-in would succeed and then carry
+     * Google's own id as `token.userId` — an id no row in our database
+     * has — so every page behind auth would behave as though the user
+     * did not exist. The account is created here on first sign-in and
+     * `user.id` is rewritten to ours, which is what the jwt callback
+     * below then stores.
+     *
+     * Credentials sign-ins already carry a real id and pass straight
+     * through.
+     */
+    async signIn({ user, account, profile }) {
+      if (account?.provider !== "google") return true;
+
+      // Google returns email_verified; an unverified address must not
+      // be able to claim an existing account by email.
+      if (profile && profile.email_verified === false) return false;
+
+      const email = user.email ?? profile?.email;
+      if (!email) return false;
+
+      const record = await findOrCreateFederatedUser({
+        email,
+        name: user.name ?? profile?.name ?? null,
+        avatarUrl: user.image ?? null,
+      });
+
+      // Null means the account is suspended.
+      if (!record) return false;
+
+      user.id = record.id;
+      return true;
+    },
+
     async jwt({ token, user }) {
       if (user?.id) {
         token.userId = user.id;
@@ -86,4 +158,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session;
     },
   },
-});
+}));

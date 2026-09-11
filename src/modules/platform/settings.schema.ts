@@ -400,6 +400,32 @@ export const SETTING_GROUPS: SettingGroup[] = [
     ],
   },
   {
+    id: "google",
+    title: "Google sign-in",
+    description:
+      "Lets restaurant owners sign up and log in with their Google " +
+      "account. Leave blank and the button is hidden rather than shown " +
+      "and broken. Create the credentials in Google Cloud Console under " +
+      "APIs & Services → Credentials → OAuth client ID (Web application).",
+    settings: [
+      {
+        key: "google.clientId",
+        label: "Client ID",
+        hint: "Ends in .apps.googleusercontent.com",
+        kind: "text",
+        envVar: "GOOGLE_CLIENT_ID",
+        placeholder: "1234567890-abc.apps.googleusercontent.com",
+      },
+      {
+        key: "google.clientSecret",
+        label: "Client secret",
+        kind: "secret",
+        envVar: "GOOGLE_CLIENT_SECRET",
+        placeholder: "GOCSPX-…",
+      },
+    ],
+  },
+  {
     id: "email",
     title: "Email",
     description:

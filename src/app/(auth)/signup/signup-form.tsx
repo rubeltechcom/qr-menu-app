@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { AuthDivider, GoogleButton } from "../google-button";
 import Link from "next/link";
 import { Check, Eye, EyeOff } from "lucide-react";
 import { signUpAction, type SignUpFormState } from "./actions";
@@ -23,8 +24,11 @@ export function SignUpForm({
   plan,
   appDomain,
   menuUrlBase,
+  googleEnabled = false,
 }: {
   plan: string | null;
+  /** Whether the operator has configured Google sign-in. */
+  googleEnabled?: boolean;
   /**
    * Set only where per-restaurant subdomains actually resolve, in which
    * case the link is <slug>.<appDomain> and is shown as a suffix.
@@ -67,7 +71,20 @@ export function SignUpForm({
         Menu builder, QR codes and the order dashboard — free to start.
       </p>
 
-      <form action={formAction} className="mt-8 flex flex-col gap-5">
+      {/* Google creates the account on first use, so the same button
+          serves signing up and logging in. The restaurant is named
+          afterwards, in the dashboard. */}
+      {googleEnabled && (
+        <div className="mt-8 flex flex-col gap-5">
+          <GoogleButton label="Sign up with Google" />
+          <AuthDivider />
+        </div>
+      )}
+
+      <form
+        action={formAction}
+        className={`flex flex-col gap-5 ${googleEnabled ? "mt-5" : "mt-8"}`}
+      >
         {/* Carried through so the dashboard can offer the plan they
             picked on the pricing page. Nothing is charged at signup. */}
         {plan && <input type="hidden" name="plan" value={plan} />}

@@ -50,9 +50,19 @@ export default async function DashboardPage() {
       )}
 
       <div>
-        <h3 className="text-sm font-medium tracking-wide text-zinc-500 uppercase">
-          Your Restaurants
-        </h3>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-sm font-medium tracking-wide text-zinc-500 uppercase">
+            Your Restaurants
+          </h3>
+          {memberships.length > 0 && (
+            <Link
+              href="/dashboard/new"
+              className="text-sm font-medium text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline"
+            >
+              Add another
+            </Link>
+          )}
+        </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {memberships.map((m) => (
             <Link
@@ -85,8 +95,18 @@ export default async function DashboardPage() {
                 No restaurants found
               </p>
               <p className="mt-1 text-sm text-zinc-500">
-                You haven&rsquo;t been added to any restaurants yet.
+                Create one to get your menu and QR codes.
               </p>
+              {/* The way out of what was previously a dead end: an
+                  owner who signed in with Google has an account but no
+                  restaurant, because Google cannot tell us its name. */}
+              <Link
+                href="/dashboard/new"
+                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-700"
+              >
+                Create your restaurant
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           )}
         </div>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
+import { googleCredentials } from "@/lib/auth";
+import { loadSettings, settingsLoaded } from "@/modules/platform/settings.service";
 import { SignUpForm } from "./signup-form";
 
 export const metadata: Metadata = {
@@ -18,9 +20,12 @@ export default async function SignUpPage({
   searchParams: Promise<{ plan?: string }>;
 }) {
   const { plan } = await searchParams;
+  if (!settingsLoaded()) await loadSettings();
+
   return (
     <SignUpForm
       plan={plan ?? null}
+      googleEnabled={(await googleCredentials()) !== null}
       appDomain={env.APP_DOMAIN}
       // Hostname only: the owner is reading an address, not a link, and
       // "https://" in front of a form field is noise.

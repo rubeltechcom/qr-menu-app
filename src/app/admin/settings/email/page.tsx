@@ -6,9 +6,9 @@ export const dynamic = "force-dynamic";
 export default function EmailSettingsPage() {
   return (
     <SettingsSurface
-      heading="Email & SMTP"
-      description="How receipts and account emails are sent. Configure Resend or your own SMTP server."
-      groupIds={["email", "smtp"]}
+      heading="Email & sign-in"
+      description="How receipts and account emails are sent, and how owners sign in."
+      groupIds={["email", "smtp", "google"]}
     />
   );
 }
