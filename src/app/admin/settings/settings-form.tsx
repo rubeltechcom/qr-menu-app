@@ -94,6 +94,9 @@ function Field({ setting }: { setting: RenderedSetting }) {
     );
   }
 
+  const fieldClass =
+    "mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 font-mono text-sm text-zinc-900 transition-colors outline-none placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10";
+
   return (
     <div>
       <label htmlFor={setting.key} className="text-sm font-medium text-zinc-900">
@@ -101,17 +104,31 @@ function Field({ setting }: { setting: RenderedSetting }) {
       </label>
       {setting.hint && <p className="mt-0.5 text-xs text-zinc-500">{setting.hint}</p>}
 
-      <input
-        id={setting.key}
-        name={setting.key}
-        type={setting.kind === "number" ? "number" : "text"}
-        min={setting.kind === "number" ? 1 : undefined}
-        defaultValue={setting.displayValue}
-        placeholder={setting.placeholder}
-        autoComplete="off"
-        spellCheck={false}
-        className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 font-mono text-sm text-zinc-900 transition-colors outline-none placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
-      />
+      {setting.kind === "multiline" ? (
+        <textarea
+          id={setting.key}
+          name={setting.key}
+          rows={4}
+          defaultValue={setting.displayValue}
+          placeholder={setting.placeholder}
+          spellCheck={false}
+          className={fieldClass}
+        />
+      ) : (
+        <input
+          id={setting.key}
+          name={setting.key}
+          type={setting.kind === "number" ? "number" : "text"}
+          // 0 is meaningful for some numbers (repeat-every-0-seconds
+          // means "play once"), so the floor is 0, not 1.
+          min={setting.kind === "number" ? 0 : undefined}
+          defaultValue={setting.displayValue}
+          placeholder={setting.placeholder}
+          autoComplete="off"
+          spellCheck={false}
+          className={fieldClass}
+        />
+      )}
 
       <SourceNote setting={setting} />
     </div>

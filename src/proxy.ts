@@ -38,6 +38,11 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-tenant-hostname", hostname.split(":")[0] ?? "");
 
+  // A layout does not receive its child route's params, so the path is
+  // carried in a header instead — the dashboard's navigation needs to
+  // know which restaurant is open in order to link to its sections.
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
   return NextResponse.next({
     request: { headers: requestHeaders },
   });

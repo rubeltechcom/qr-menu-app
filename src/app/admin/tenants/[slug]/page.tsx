@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireSuperadmin } from "@/lib/require-superadmin";
 import { listAllTenants, statsForTenant } from "@/modules/platform/platform.repository";
 import { effectivePlan, PLANS, type PlanId } from "@/modules/billing/plans";
+import { PlanControl } from "./plan-control";
 
 /** One restaurant, as the platform operator sees it. */
 export const dynamic = "force-dynamic";
@@ -35,7 +36,9 @@ export default async function PlatformTenantPage({
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    // No padding of its own: AdminLayout already provides it, and
+    // doubling it left the content floating on a phone.
+    <div>
       <Link
         href="/admin"
         className="text-sm text-zinc-500 underline-offset-2 hover:underline"
@@ -77,6 +80,22 @@ export default async function PlatformTenantPage({
             good standing, so the app is enforcing {entitled.name} limits.
           </p>
         )}
+
+        <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
+          <h3 className="font-medium text-zinc-900">Change plan</h3>
+          <p className="mt-1 text-sm text-zinc-600">
+            For a restaurant paying outside Stripe, a trial extension, or correcting a
+            mistake.
+          </p>
+          <div className="mt-4">
+            <PlanControl
+              tenantId={tenant.id}
+              currentPlan={tenant.plan}
+              currentStatus={tenant.subscriptionStatus}
+              hasStripeSubscription={Boolean(tenant.stripeSubscriptionId)}
+            />
+          </div>
+        </div>
       </section>
 
       <section className="mt-8">

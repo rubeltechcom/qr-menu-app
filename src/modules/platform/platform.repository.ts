@@ -31,6 +31,9 @@ export interface TenantSummary {
   paymentMode: string;
   currency: string;
   connectChargesEnabled: boolean;
+  /** Present when Stripe is billing them, so the admin panel can warn
+   *  that a hand-set plan will be overwritten by the next webhook. */
+  stripeSubscriptionId: string | null;
   trialEndsAt: Date | null;
   pastDueSince: Date | null;
   createdAt: Date;
@@ -52,7 +55,8 @@ export async function listAllTenants(): Promise<TenantSummary[]> {
     await tx.$executeRawUnsafe(`select set_config('app.platform_admin', 'on', true)`);
     return tx.$queryRaw<TenantSummary[]>`
       SELECT id, slug, name, plan, "subscriptionStatus", "paymentMode", currency,
-             "connectChargesEnabled", "trialEndsAt", "pastDueSince",
+             "connectChargesEnabled", "stripeSubscriptionId",
+             "trialEndsAt", "pastDueSince",
              "createdAt", "deletedAt"
       FROM tenants
       ORDER BY "createdAt" DESC
@@ -140,6 +144,48 @@ export async function setTenantSuspended(
     await tx.$executeRawUnsafe(
       `UPDATE tenants SET "deletedAt" = ${suspended ? "now()" : "NULL"} WHERE id = $1`,
       tenantId,
+    );
+  });
+}
+
+/**
+ * Move a restaurant onto a different plan, by hand.
+ *
+ * The operator's override for the cases billing cannot express: a
+ * restaurant that paid by bank transfer, one being given a trial
+ * extension, a partner on a permanent free Pro account, or an ordinary
+ * mistake that needs undoing.
+ *
+ * `subscriptionStatus` is set alongside the plan deliberately. The two
+ * are read together by effectivePlan() — a PRO plan with a CANCELED
+ * status is still Free — so setting the plan alone would leave an
+ * operator staring at "Pro" in the admin panel while the restaurant
+ * kept getting Free's limits.
+ *
+ * This does NOT touch Stripe. A restaurant with a live subscription
+ * keeps it, and the next webhook will overwrite whatever is set here —
+ * which is correct: Stripe is the source of truth for anyone actually
+ * paying through it, and the caller is warned in the UI.
+ */
+export async function setTenantPlan(
+  tenantId: string,
+  plan: string,
+  subscriptionStatus: string,
+): Promise<void> {
+  await rawPrisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(`select set_config('app.tenant_id', $1, true)`, tenantId);
+    await tx.$executeRawUnsafe(
+      `UPDATE tenants
+          SET "plan" = $2,
+              "subscriptionStatus" = $3,
+              -- A plan change by hand resolves whatever dunning state
+              -- the restaurant was in; leaving pastDueSince set would
+              -- keep counting down a grace period that no longer applies.
+              "pastDueSince" = NULL
+        WHERE id = $1`,
+      tenantId,
+      plan,
+      subscriptionStatus,
     );
   });
 }

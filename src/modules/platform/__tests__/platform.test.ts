@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { rawPrisma } from "@/server/db/client";
 import { forTenant } from "@/server/db/tenant-client";
 import { createTenantRecord } from "@/modules/tenants/tenant.repository";
-import { listAllTenants, statsForTenant } from "../platform.repository";
+import { effectivePlan } from "@/modules/billing/plans";
+import { listAllTenants, setTenantPlan, statsForTenant } from "../platform.repository";
 
 /**
  * The platform admin area is the one place that reads across tenants,
@@ -154,5 +155,106 @@ describe("platform admin reads", () => {
     const visible = asOwnerA.map((row) => row.id);
     expect(visible).toContain(tenantAId);
     expect(visible).not.toContain(tenantBId);
+  });
+});
+
+describe("changing a plan by hand", () => {
+  let tenantId: string;
+  let ownerId: string;
+
+  beforeAll(async () => {
+    const stamp = Date.now();
+    const owner = await rawPrisma.user.create({
+      data: { email: `plan-${stamp}@example.test`, name: "Plan Owner" },
+    });
+    ownerId = owner.id;
+
+    const tenant = await createTenantRecord({
+      name: "Plan Test Diner",
+      slug: `plan-test-${stamp}`,
+      ownerUserId: ownerId,
+      defaultLocale: "en",
+      currency: "USD",
+    });
+    tenantId = tenant.id;
+  });
+
+  afterAll(async () => {
+    await rawPrisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantId,
+      );
+      await tx.membership.deleteMany({ where: { tenantId } });
+    });
+    await rawPrisma.tenant.deleteMany({ where: { id: tenantId } });
+    await rawPrisma.user.deleteMany({ where: { id: ownerId } });
+  });
+
+  /** Read the row the way the app's entitlement check does. */
+  async function readPlan() {
+    const rows = await rawPrisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(`select set_config('app.platform_admin', 'on', true)`);
+      return tx.$queryRawUnsafe<
+        Array<{ plan: string; subscriptionStatus: string; pastDueSince: Date | null }>
+      >(
+        `SELECT plan, "subscriptionStatus", "pastDueSince" FROM tenants WHERE id = $1`,
+        tenantId,
+      );
+    });
+    return rows[0]!;
+  }
+
+  it("moves a restaurant onto a paid plan", async () => {
+    await setTenantPlan(tenantId, "PRO", "ACTIVE");
+
+    const row = await readPlan();
+    expect(row.plan).toBe("PRO");
+    expect(row.subscriptionStatus).toBe("ACTIVE");
+  });
+
+  it("makes the new plan the one actually enforced", async () => {
+    // The check that matters: plan and status are read together, and a
+    // paid plan with a bad status still resolves to Free. Setting one
+    // without the other would show "Pro" in the panel while the
+    // restaurant kept hitting Free's limits.
+    await setTenantPlan(tenantId, "SMART", "ACTIVE");
+    const row = await readPlan();
+
+    expect(effectivePlan(row).id).toBe("SMART");
+  });
+
+  it("clears a past-due flag, since a manual change resolves it", async () => {
+    await rawPrisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `select set_config('app.tenant_id', $1, true)`,
+        tenantId,
+      );
+      await tx.$executeRawUnsafe(
+        `UPDATE tenants SET "pastDueSince" = now() WHERE id = $1`,
+        tenantId,
+      );
+    });
+
+    await setTenantPlan(tenantId, "PRO", "ACTIVE");
+    expect((await readPlan()).pastDueSince).toBeNull();
+  });
+
+  it("leaves a cancelled paid plan entitled to Free", async () => {
+    // Downgrading by cancelling rather than by changing the plan: the
+    // record still says PRO, but nothing paid is enforced.
+    await setTenantPlan(tenantId, "PRO", "CANCELED");
+    const row = await readPlan();
+
+    expect(row.plan).toBe("PRO");
+    expect(effectivePlan(row).id).toBe("FREE");
+  });
+
+  it("moves a restaurant back down to Free", async () => {
+    await setTenantPlan(tenantId, "FREE", "CANCELED");
+    const row = await readPlan();
+
+    expect(row.plan).toBe("FREE");
+    expect(effectivePlan(row).id).toBe("FREE");
   });
 });

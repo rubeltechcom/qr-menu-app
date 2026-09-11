@@ -30,9 +30,13 @@ export function AdminLayout({
 }: AdminLayoutProps) {
   return (
     <div className="flex min-h-screen w-full flex-col bg-zinc-50 md:flex-row">
-      {/* Sidebar (Desktop) */}
-      <aside className="hidden w-64 flex-col border-r border-zinc-200 bg-white md:flex">
-        <div className="flex h-16 items-center border-b border-zinc-200 px-6">
+      {/* Sidebar.
+          Fixed rather than in the document flow: it used to scroll away
+          with the page, so on a long list of restaurants the navigation
+          was simply gone. The main column is offset by its width to
+          make room. */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-zinc-200 bg-white md:flex">
+        <div className="flex h-16 shrink-0 items-center border-b border-zinc-200 px-6">
           <Link
             href="/"
             className="flex items-center gap-2 font-semibold tracking-tight text-zinc-900"
@@ -42,7 +46,9 @@ export function AdminLayout({
           </Link>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-4">
+        {/* Only this scrolls, and only when there are more links than
+            fit — the logo and log-out stay put. */}
+        <nav className="min-h-0 flex-1 overflow-y-auto p-4">
           <div className="flex flex-col gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -64,7 +70,7 @@ export function AdminLayout({
           </div>
         </nav>
 
-        <div className="border-t border-zinc-200 p-4">
+        <div className="shrink-0 border-t border-zinc-200 p-4">
           <form action={onLogoutAction}>
             <button
               type="submit"
@@ -77,21 +83,22 @@ export function AdminLayout({
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex flex-1 flex-col">
-        {/* Topbar */}
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b border-zinc-200 bg-white px-4 shadow-sm sm:px-6">
-          <div className="flex flex-1 items-center gap-4">
+      {/* Main column. Offset by the fixed sidebar's width on desktop;
+          full width below that, where the sidebar is replaced by the
+          bottom bar. */}
+      <main className="flex min-w-0 flex-1 flex-col pb-16 md:pb-0 md:pl-64">
+        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-4 border-b border-zinc-200 bg-white px-4 shadow-sm sm:px-6">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
             {backLink && (
               <Link
                 href={backLink.href}
-                className="flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
                 aria-label={backLink.label}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Link>
             )}
-            <h1 className="text-lg font-semibold tracking-tight text-zinc-900">
+            <h1 className="truncate text-lg font-semibold tracking-tight text-zinc-900">
               {title}
             </h1>
           </div>
@@ -106,11 +113,40 @@ export function AdminLayout({
           </div>
         </header>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-6xl">{children}</div>
         </div>
       </main>
+
+      {/* Navigation on a phone. The sidebar is hidden below md, which
+          previously left no way to move between sections at all. */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-zinc-200 bg-white md:hidden">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                item.active ? "text-zinc-900" : "text-zinc-500"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="max-w-full truncate px-1">{item.label}</span>
+            </Link>
+          );
+        })}
+
+        <form action={onLogoutAction} className="flex flex-1">
+          <button
+            type="submit"
+            className="flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-zinc-500"
+          >
+            <LogOut className="h-5 w-5" />
+            <span>Log out</span>
+          </button>
+        </form>
+      </nav>
     </div>
   );
 }
