@@ -6,6 +6,7 @@ import * as menuRepo from "@/modules/menu/menu.repository";
 import { createLocationAction, createMenuAction } from "./actions";
 import { AddCategoryButton, EditCategoryButton } from "./category-editor";
 import { DishEditor } from "./dish-editor";
+import { listAllTranslationsForEntities } from "@/modules/i18n/translation.repository";
 import {
   ItemAvailabilityToggle,
   DeleteItemButton,
@@ -67,7 +68,7 @@ export default async function MenuBuilderPage({
 }) {
   const { tenantSlug } = await params;
   const { category: openCategoryId } = await searchParams;
-  const { db } = await requireDashboardTenant(tenantSlug);
+  const { db, tenant } = await requireDashboardTenant(tenantSlug);
 
   const locations = await locationRepo.listLocations(db);
 
@@ -77,6 +78,10 @@ export default async function MenuBuilderPage({
 
   const location = locations[0]!;
   const menus = await menuRepo.listMenusForLocation(db, location.id);
+
+  // Languages this restaurant serves. Only when there is more than one
+  // does the editor offer translation boxes at all.
+  const locales = tenant.locales?.length ? tenant.locales : [tenant.defaultLocale];
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
@@ -101,6 +106,8 @@ export default async function MenuBuilderPage({
           menuId={menus[0]!.id}
           openCategoryId={openCategoryId}
           db={db}
+          locales={locales}
+          defaultLocale={tenant.defaultLocale}
         />
       )}
     </div>
@@ -112,11 +119,15 @@ async function MenuSection({
   menuId,
   openCategoryId,
   db,
+  locales,
+  defaultLocale,
 }: {
   tenantSlug: string;
   menuId: string;
   openCategoryId?: string;
   db: TenantPrismaClient;
+  locales: string[];
+  defaultLocale: string;
 }) {
   const menu = await menuRepo.getMenuWithContent(db, menuId);
   if (!menu) return null;
@@ -126,6 +137,17 @@ async function MenuSection({
   const active =
     menu.categories.find((candidate) => candidate.id === openCategoryId) ??
     menu.categories[0];
+
+  // Existing translations for the dishes on screen, in one query rather
+  // than one per dish. Skipped entirely for a single-language menu,
+  // where the editor shows no translation boxes to fill.
+  const translations =
+    locales.length > 1 && active
+      ? await listAllTranslationsForEntities(
+          db,
+          active.items.map((item) => item.id),
+        )
+      : [];
 
   return (
     <section className="mt-8">
@@ -219,6 +241,9 @@ async function MenuSection({
                     tenantSlug={tenantSlug}
                     categoryId={active.id}
                     trigger="pencil"
+                    locales={locales}
+                    defaultLocale={defaultLocale}
+                    translations={translations.filter((row) => row.entityId === item.id)}
                     dish={{
                       id: item.id,
                       name: item.name,

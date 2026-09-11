@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { TranslationFields, type ExistingTranslation } from "./translation-fields";
 import { Plus, X } from "lucide-react";
 import { MediaGallery } from "@/components/menu/media-gallery";
-import { createMenuItemAction, updateMenuItemAction } from "./actions";
+import {
+  createMenuItemAction,
+  saveItemTranslationsAction,
+  updateMenuItemAction,
+} from "./actions";
 
 export interface DishDraft {
   id: string;
@@ -28,12 +33,19 @@ export function DishEditor({
   categoryId,
   dish,
   trigger,
+  locales,
+  defaultLocale,
+  translations = [],
 }: {
   tenantSlug: string;
   categoryId: string;
   /** Absent when adding a new dish. */
   dish?: DishDraft;
   trigger: "tile" | "pencil";
+  /** Languages this restaurant offers, for the translation boxes. */
+  locales?: string[];
+  defaultLocale?: string;
+  translations?: ExistingTranslation[];
 }) {
   const [isOpen, setOpen] = useState(false);
 
@@ -65,6 +77,9 @@ export function DishEditor({
           categoryId={categoryId}
           dish={dish}
           onClose={() => setOpen(false)}
+          locales={locales}
+          defaultLocale={defaultLocale}
+          translations={translations}
         />
       )}
     </>
@@ -76,11 +91,17 @@ function DishSheet({
   categoryId,
   dish,
   onClose,
+  locales,
+  defaultLocale,
+  translations = [],
 }: {
   tenantSlug: string;
   categoryId: string;
   dish?: DishDraft;
   onClose: () => void;
+  locales?: string[];
+  defaultLocale?: string;
+  translations?: ExistingTranslation[];
 }) {
   const [images, setImages] = useState<string[]>(dish?.images ?? []);
   const [videoUrl, setVideoUrl] = useState<string | null>(dish?.videoUrl ?? null);
@@ -99,6 +120,13 @@ function DishSheet({
       try {
         if (dish) {
           await updateMenuItemAction(tenantSlug, dish.id, formData);
+          // Separate call rather than folding the tr.* fields into the
+          // item update: the item's own validation should not have to
+          // know about translations, and a translation failing must not
+          // roll back a price change the owner just made.
+          if (locales && locales.length > 1) {
+            await saveItemTranslationsAction(tenantSlug, dish.id, formData);
+          }
         } else {
           await createMenuItemAction(tenantSlug, categoryId, formData);
         }
@@ -195,6 +223,20 @@ function DishSheet({
               className="mt-1.5 w-full resize-none rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none focus:border-zinc-900"
             />
           </div>
+
+          {/* Only for a dish that exists: translations are keyed by id,
+              and a new dish has none until it is saved. */}
+          {dish && locales && defaultLocale && (
+            <TranslationFields
+              locales={locales}
+              defaultLocale={defaultLocale}
+              existing={translations}
+              fields={[
+                { key: "name", label: "Dish name" },
+                { key: "description", label: "Description", multiline: true },
+              ]}
+            />
+          )}
 
           <div>
             <label htmlFor="dietaryTags" className="text-sm font-medium text-zinc-800">

@@ -5,6 +5,8 @@ import { useCart } from "./use-cart";
 import { useFavourites } from "./use-favourites";
 import { useActiveOrder } from "./use-active-order";
 import { useLocale } from "./use-locale";
+import { buildTranslationMap } from "@/modules/i18n/translation-map";
+import type { TranslationRow } from "@/modules/i18n/translation.repository";
 import { LanguagePicker } from "./language-picker";
 
 interface MenuItemView {
@@ -129,6 +131,7 @@ export function Storefront({
   logoUrl,
   locales,
   defaultLocale,
+  translations,
   currency,
   categories,
   paymentMode,
@@ -143,6 +146,8 @@ export function Storefront({
   /** Languages this restaurant offers, first being its preferred one. */
   locales: string[];
   defaultLocale: string;
+  /** Menu-content translations, keyed by locale. */
+  translations: Record<string, TranslationRow[]>;
   currency: string;
   categories: CategoryView[];
   paymentMode: PaymentMode;
@@ -154,6 +159,28 @@ export function Storefront({
     offered: locales,
     fallback: defaultLocale,
   });
+  // Dish and category names in the guest's language.
+  //
+  // Applied here rather than on the server because the language is a
+  // device preference the server cannot know — every offered language
+  // ships with the page, so switching is instant and needs no request.
+  const localisedCategories = useMemo(() => {
+    const rows = translations[locale];
+    if (!rows?.length) return categories;
+
+    const map = buildTranslationMap(rows);
+
+    return categories.map((category) => ({
+      ...category,
+      name: map.get(category.id, "name", category.name),
+      items: category.items.map((item) => ({
+        ...item,
+        name: map.get(item.id, "name", item.name),
+        description: map.get(item.id, "description", item.description ?? "") || null,
+      })),
+    }));
+  }, [categories, translations, locale]);
+
   const {
     isFavourite,
     toggle: toggleFavourite,
@@ -184,7 +211,7 @@ export function Storefront({
    * screen.
    */
   const popularCategory = useMemo<CategoryView>(() => {
-    const all = categories.flatMap((category) => category.items);
+    const all = localisedCategories.flatMap((category) => category.items);
     const tagged = all.filter((item) => item.dietaryTags.includes("Popular"));
     return {
       id: POPULAR_ID,
@@ -192,7 +219,7 @@ export function Storefront({
       items:
         tagged.length > 0 ? [...tagged, ...all.filter((i) => !tagged.includes(i))] : all,
     };
-  }, [categories, t]);
+  }, [localisedCategories, t]);
 
   /**
    * The dishes this diner has hearted, as a tab of their own.
@@ -203,20 +230,20 @@ export function Storefront({
    */
   const favouritesCategory = useMemo<CategoryView | null>(() => {
     if (favouriteCount === 0) return null;
-    const all = categories.flatMap((category) => category.items);
+    const all = localisedCategories.flatMap((category) => category.items);
     const items = all.filter((item) => isFavourite(item.id));
     return items.length > 0
       ? { id: FAVOURITES_ID, name: t("favourites"), icon: "❤️", items }
       : null;
-  }, [categories, favouriteCount, isFavourite, t]);
+  }, [localisedCategories, favouriteCount, isFavourite, t]);
 
   const navCategories = useMemo(
     () => [
       popularCategory,
       ...(favouritesCategory ? [favouritesCategory] : []),
-      ...categories,
+      ...localisedCategories,
     ],
-    [popularCategory, favouritesCategory, categories],
+    [popularCategory, favouritesCategory, localisedCategories],
   );
 
   /**
@@ -225,12 +252,12 @@ export function Storefront({
    */
   const emojiForItem = useMemo(() => {
     const byItem = new Map<string, string>();
-    for (const category of categories) {
+    for (const category of localisedCategories) {
       const icon = categoryEmoji(category);
       for (const item of category.items) byItem.set(item.id, icon);
     }
     return (itemId: string) => byItem.get(itemId);
-  }, [categories]);
+  }, [localisedCategories]);
 
   const money = useMemo(() => {
     return (cents: number) => {

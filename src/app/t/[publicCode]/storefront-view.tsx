@@ -7,6 +7,10 @@ import * as menuRepo from "@/modules/menu/menu.repository";
 import * as locationRepo from "@/modules/locations/location.repository";
 import { Storefront, type PaymentMode } from "./storefront";
 import { availableProviders } from "@/modules/payments/registry";
+import {
+  listTranslationsForEntities,
+  type TranslationRow,
+} from "@/modules/i18n/translation.repository";
 import { paymentModeOf } from "@/modules/payments/payment.service";
 
 /**
@@ -123,6 +127,33 @@ export async function StorefrontForTable({
     // empty heading the diner cannot act on.
     .filter((category) => category.items.length > 0);
 
+  // Translations for every language this restaurant offers, sent with
+  // the page rather than fetched when the guest switches.
+  //
+  // The guest's language is a device preference, so the server does not
+  // know it at render time; fetching on switch would mean a spinner in
+  // the middle of reading a menu. A menu's worth of names and
+  // descriptions is small next to the photos on the same page.
+  const offeredLocales = tenant?.locales?.length
+    ? tenant.locales
+    : [tenant?.defaultLocale ?? "en"];
+
+  const translatableIds = [
+    ...categories.map((category) => category.id),
+    ...categories.flatMap((category) => category.items.map((item) => item.id)),
+  ];
+
+  const translations: Record<string, TranslationRow[]> = {};
+  await Promise.all(
+    offeredLocales
+      // The original text is already in the rows above; only the other
+      // languages need looking up.
+      .filter((code) => code !== tenant?.defaultLocale)
+      .map(async (code) => {
+        translations[code] = await listTranslationsForEntities(db, translatableIds, code);
+      }),
+  );
+
   return (
     <Storefront
       publicCode={publicCode}
@@ -134,6 +165,7 @@ export async function StorefrontForTable({
       // fall back to its single default so the menu still renders.
       locales={tenant?.locales?.length ? tenant.locales : [tenant?.defaultLocale ?? "en"]}
       defaultLocale={tenant?.defaultLocale ?? "en"}
+      translations={translations}
       currency={location?.currency ?? "USD"}
       categories={categories}
       paymentMode={paymentMode}

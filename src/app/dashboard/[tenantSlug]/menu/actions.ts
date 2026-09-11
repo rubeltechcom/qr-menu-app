@@ -1,6 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  saveTranslation,
+  TRANSLATABLE_FIELDS,
+  type TranslatableField,
+  type TranslatableType,
+} from "@/modules/i18n/translation.repository";
+import { isSupportedLocale } from "@/modules/i18n/locales";
+
+function isTranslatableField(value: string): value is TranslatableField {
+  return (TRANSLATABLE_FIELDS as readonly string[]).includes(value);
+}
 import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
 import * as menuService from "@/modules/menu/menu.service";
 import * as locationService from "@/modules/locations/location.service";
@@ -206,5 +217,71 @@ export async function reorderCategoriesAction(tenantSlug: string, ids: string[])
 export async function reorderMenuItemsAction(tenantSlug: string, ids: string[]) {
   const { withTenant } = await requireDashboardTenant(tenantSlug);
   await withTenant(() => menuService.reorderMenuItems({ ids }));
+  revalidatePath(`/dashboard/${tenantSlug}/menu`);
+}
+
+/**
+ * Saves the translations typed alongside a dish or category.
+ *
+ * Field names arrive as `tr.<locale>.<field>`, so one submit carries
+ * every language the restaurant offers without this action needing to
+ * know which those are.
+ *
+ * Uses `db` directly rather than `withTenant`: the repository takes a
+ * scoped client, so there is no service call that would need the
+ * AsyncLocalStorage context.
+ */
+async function saveTranslationsFromForm(
+  tenantSlug: string,
+  entityType: TranslatableType,
+  entityId: string,
+  formData: FormData,
+) {
+  const { db, tenant } = await requireDashboardTenant(tenantSlug);
+
+  const writes: Promise<void>[] = [];
+
+  for (const [field, raw] of formData.entries()) {
+    if (typeof raw !== "string") continue;
+
+    const match = /^tr\.([a-z-]+)\.(\w+)$/.exec(field);
+    if (!match) continue;
+
+    const [, locale, entityField] = match;
+    // Both are checked against what the app knows: a form field is
+    // attacker-controlled, and an unrecognised locale would write a row
+    // nothing can ever read back.
+    if (!locale || !isSupportedLocale(locale)) continue;
+    if (!entityField || !isTranslatableField(entityField)) continue;
+
+    writes.push(
+      saveTranslation(db, tenant.id, {
+        entityType,
+        entityId,
+        field: entityField,
+        locale,
+        value: raw,
+      }),
+    );
+  }
+
+  await Promise.all(writes);
+}
+
+export async function saveItemTranslationsAction(
+  tenantSlug: string,
+  itemId: string,
+  formData: FormData,
+) {
+  await saveTranslationsFromForm(tenantSlug, "menuItem", itemId, formData);
+  revalidatePath(`/dashboard/${tenantSlug}/menu`);
+}
+
+export async function saveCategoryTranslationsAction(
+  tenantSlug: string,
+  categoryId: string,
+  formData: FormData,
+) {
+  await saveTranslationsFromForm(tenantSlug, "category", categoryId, formData);
   revalidatePath(`/dashboard/${tenantSlug}/menu`);
 }
