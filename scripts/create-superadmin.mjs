@@ -16,12 +16,31 @@
  * Promoting an existing account keeps its memberships and password;
  * pass a password only if you want to change it.
  */
-import { config } from "dotenv";
-config({ path: ".env.local" });
-config({ path: ".env" });
+// Loads .env files when run from a developer's machine. In a container
+// the environment is already set, and dotenv is not bundled into the
+// standalone build — so a missing module here is expected, not an error.
+//
+// A dynamic import, because a static one would be hoisted above this
+// try/catch and crash the whole script in production.
+try {
+  const { config } = await import("dotenv");
+  config({ path: ".env.local" });
+  config({ path: ".env" });
+} catch {
+  // Production: DATABASE_URL is already in the environment.
+}
 
 import { PrismaClient } from "@prisma/client";
 import { hash } from "@node-rs/argon2";
+
+if (!process.env.DATABASE_URL) {
+  console.error(
+    "DATABASE_URL is not set, so there is no database to create the account in.\n" +
+      "Run this from the application's own environment — in Coolify, open the\n" +
+      "app and use its Terminal rather than a shell on the host.",
+  );
+  process.exit(1);
+}
 
 const [email, password, name] = process.argv.slice(2);
 

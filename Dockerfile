@@ -71,6 +71,16 @@ COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder --chown=node:node /app/prisma ./prisma
 
+# Maintenance scripts run from the container's own terminal: creating
+# the platform superadmin on a fresh install, and sweeping orphaned
+# uploads. Without these the only way to make the first admin account
+# would be editing the database by hand.
+#
+# package.json is NOT copied — the standalone output writes its own,
+# carrying every npm script, and overwriting it would replace the file
+# the server itself depends on.
+COPY --from=builder --chown=node:node /app/scripts ./scripts
+
 # The Prisma CLI and its engines, which the standalone output prunes —
 # it ships the client, not the tooling. Needed because migrations are
 # applied by the entrypoint on every start, so a deploy is one action
