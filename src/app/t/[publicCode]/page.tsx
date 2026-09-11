@@ -53,7 +53,13 @@ export default async function TableLandingPage({
   // fail on tap.
   const tenant = await db.tenant.findFirst({
     where: { id: table.tenantId },
-    select: { paymentMode: true },
+    select: {
+      paymentMode: true,
+      name: true,
+      logoUrl: true,
+      locales: true,
+      defaultLocale: true,
+    },
   });
   const paymentMode: PaymentMode = paymentModeOf({
     paymentMode: tenant?.paymentMode ?? "COUNTER",
@@ -107,7 +113,12 @@ export default async function TableLandingPage({
       publicCode={publicCode}
       tableId={table.id}
       tables={tables}
-      locationName={location?.name ?? ""}
+      restaurantName={tenant?.name ?? location?.name ?? ""}
+      logoUrl={tenant?.logoUrl ?? null}
+      // An install that predates the locales column has an empty array;
+      // fall back to its single default so the menu still renders.
+      locales={tenant?.locales?.length ? tenant.locales : [tenant?.defaultLocale ?? "en"]}
+      defaultLocale={tenant?.defaultLocale ?? "en"}
       currency={location?.currency ?? "USD"}
       categories={categories}
       paymentMode={paymentMode}

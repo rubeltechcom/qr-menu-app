@@ -5,6 +5,7 @@ import {
   LayoutGrid,
   QrCode,
   ReceiptText,
+  SlidersHorizontal,
   UtensilsCrossed,
 } from "lucide-react";
 import { requireDashboardTenant } from "@/lib/require-dashboard-tenant";
@@ -110,6 +111,12 @@ export default async function TenantOverviewPage({
       icon: LayoutGrid,
       title: "Plan & billing",
       body: `${plan.name} plan`,
+    },
+    {
+      href: `/dashboard/${tenantSlug}/settings`,
+      icon: SlidersHorizontal,
+      title: "Settings",
+      body: "Your logo, name and languages",
     },
   ];
 

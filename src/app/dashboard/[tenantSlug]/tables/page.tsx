@@ -185,7 +185,9 @@ async function TableCard({
   tenantSlug: string;
   table: { id: string; label: string; publicCode: string; seats: number | null };
 }) {
-  const svg = await tableQrSvg(table.publicCode, 160);
+  // Encodes the restaurant's own subdomain, so a guest reading the URL
+  // under a printed code sees a name they recognise rather than ours.
+  const svg = await tableQrSvg(table.publicCode, 160, { tenantSlug });
 
   return (
     <div className="flex flex-col items-center rounded-xl border border-zinc-200 p-4">
@@ -221,7 +223,7 @@ async function TableCard({
         {table.publicCode}
       </p>
       <p className="mt-1 w-full truncate text-center text-[10px] text-zinc-400">
-        {tableStorefrontUrl(table.publicCode)}
+        {tableStorefrontUrl(table.publicCode, { tenantSlug })}
       </p>
     </div>
   );

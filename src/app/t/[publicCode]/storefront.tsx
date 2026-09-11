@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCart } from "./use-cart";
 import { useFavourites } from "./use-favourites";
 import { useActiveOrder } from "./use-active-order";
+import { useLocale } from "./use-locale";
+import { LanguagePicker } from "./language-picker";
 
 interface MenuItemView {
   id: string;
@@ -30,6 +32,7 @@ type OrderType = "DINE_IN" | "TAKEAWAY" | "DELIVERY";
 export type PaymentMode = "COUNTER" | "OPTIONAL" | "REQUIRED";
 
 import { ItemModal } from "@/components/menu/item-modal";
+import type { Translate } from "@/modules/i18n/dictionary";
 import { DELIVERY_FEE_CENTS } from "@/modules/orders/order.schema";
 import { Plus, Minus } from "lucide-react";
 
@@ -122,7 +125,10 @@ export function Storefront({
   publicCode,
   tableId,
   tables,
-  locationName,
+  restaurantName,
+  logoUrl,
+  locales,
+  defaultLocale,
   currency,
   categories,
   paymentMode,
@@ -131,13 +137,23 @@ export function Storefront({
   publicCode: string;
   tableId: string;
   tables: Array<{ id: string; label: string }>;
-  locationName: string;
+  /** The restaurant's own name, shown in the header beside its logo. */
+  restaurantName: string;
+  logoUrl: string | null;
+  /** Languages this restaurant offers, first being its preferred one. */
+  locales: string[];
+  defaultLocale: string;
   currency: string;
   categories: CategoryView[];
   paymentMode: PaymentMode;
   providers: Array<{ id: string; displayName: string }>;
 }) {
   const cart = useCart(publicCode);
+  const { locale, setLocale, t } = useLocale({
+    publicCode,
+    offered: locales,
+    fallback: defaultLocale,
+  });
   const {
     isFavourite,
     toggle: toggleFavourite,
@@ -172,11 +188,11 @@ export function Storefront({
     const tagged = all.filter((item) => item.dietaryTags.includes("Popular"));
     return {
       id: POPULAR_ID,
-      name: "Popular",
+      name: t("popular"),
       items:
         tagged.length > 0 ? [...tagged, ...all.filter((i) => !tagged.includes(i))] : all,
     };
-  }, [categories]);
+  }, [categories, t]);
 
   /**
    * The dishes this diner has hearted, as a tab of their own.
@@ -190,9 +206,9 @@ export function Storefront({
     const all = categories.flatMap((category) => category.items);
     const items = all.filter((item) => isFavourite(item.id));
     return items.length > 0
-      ? { id: FAVOURITES_ID, name: "Favourites", icon: "❤️", items }
+      ? { id: FAVOURITES_ID, name: t("favourites"), icon: "❤️", items }
       : null;
-  }, [categories, favouriteCount, isFavourite]);
+  }, [categories, favouriteCount, isFavourite, t]);
 
   const navCategories = useMemo(
     () => [
@@ -415,23 +431,33 @@ export function Storefront({
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white px-5 pt-6 pb-2 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center text-red-600">
-              <svg className="h-10 w-10 fill-current" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 lowercase">
-              {locationName.toLowerCase() === "demo diner — riverside"
-                ? "wagamama"
-                : locationName.toLowerCase()}
+          <div className="flex min-w-0 items-center gap-3">
+            {/* The restaurant's own logo when it has uploaded one. The
+                star is the fallback, not the brand — a menu should look
+                like the restaurant, not like us. */}
+            {logoUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element -- uploads
+                 may live on a bucket whose host is unknown at build time. */
+              <img
+                src={logoUrl}
+                alt={restaurantName}
+                className="h-10 w-10 shrink-0 rounded-xl object-cover"
+              />
+            ) : (
+              <div className="flex shrink-0 items-center justify-center text-red-600">
+                <svg className="h-10 w-10 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              </div>
+            )}
+            <h1 className="truncate text-2xl font-bold tracking-tight text-zinc-900">
+              {restaurantName}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
-              English
-            </button>
-          </div>
+
+          {locales.length > 1 && (
+            <LanguagePicker locales={locales} active={locale} onChange={setLocale} />
+          )}
         </div>
 
         {/* Categories Slider */}
@@ -500,7 +526,7 @@ export function Storefront({
       {/* Menu Items — only the active category */}
       {filteredItems.length === 0 ? (
         <div className="px-5 py-20 text-center">
-          <p className="text-zinc-500">No items found.</p>
+          <p className="text-zinc-500">{t("noItems")}</p>
         </div>
       ) : (
         <div className="px-4 py-6">
@@ -651,8 +677,11 @@ export function Storefront({
         >
           <span className="italic">
             {cart.itemCount > 0
-              ? `Order ${cart.itemCount} for ${money(cart.subtotalCents)}`
-              : "Order"}
+              ? t("orderCount", {
+                  count: cart.itemCount,
+                  total: money(cart.subtotalCents),
+                })
+              : t("order")}
           </span>
           <div className="flex items-center gap-3">
             <svg
@@ -681,6 +710,7 @@ export function Storefront({
           cart={cart}
           currency={currency}
           money={money}
+          t={t}
           onClose={() => setSheetOpen(false)}
           onPlaced={handlePlaced}
         />
@@ -696,6 +726,7 @@ function CheckoutSheet({
   cart,
   currency,
   money,
+  t,
   onClose,
   onPlaced,
 }: {
@@ -705,6 +736,7 @@ function CheckoutSheet({
   cart: ReturnType<typeof useCart>;
   currency: string;
   money: (cents: number) => string;
+  t: Translate;
   onClose: () => void;
   onPlaced: (result: { orderNumber: number; trackToken: string }) => void;
 }) {
@@ -767,7 +799,7 @@ function CheckoutSheet({
   const submit = async () => {
     setError(null);
     if (missing.length > 0) {
-      setError("Fill all required fields");
+      setError(t("fillAllFields"));
       return;
     }
 
@@ -803,7 +835,7 @@ function CheckoutSheet({
       };
 
       if (!response.ok || !payload.orderNumber || !payload.trackToken) {
-        setError(payload.error ?? "Could not place the order. Please try again.");
+        setError(payload.error ?? t("couldNotPlace"));
         return;
       }
 
@@ -811,7 +843,7 @@ function CheckoutSheet({
       // only once the diner has seen it (see the effect below).
       setPlaced({ orderNumber: payload.orderNumber, trackToken: payload.trackToken });
     } catch {
-      setError("You appear to be offline. Check your connection and try again.");
+      setError(t("offline"));
     } finally {
       setSubmitting(false);
     }
@@ -913,14 +945,16 @@ function CheckoutSheet({
                   </svg>
                 </div>
               </div>
-              <h3 className="mt-6 text-2xl font-bold text-zinc-900">Order placed</h3>
+              <h3 className="mt-6 text-2xl font-bold text-zinc-900">
+                {t("orderPlaced")}
+              </h3>
               <p className="mt-2 text-[15px] text-zinc-600">
-                Order {placed.orderNumber} is with the kitchen
+                {t("orderWithKitchen", { number: placed.orderNumber })}
               </p>
               <p className="mt-1 text-sm text-zinc-500">
                 {scheduledAt
-                  ? `Scheduled for ${scheduledAt}`
-                  : "You can keep browsing the menu"}
+                  ? t("scheduledFor", { time: scheduledAt })
+                  : t("keepBrowsing")}
               </p>
             </div>
           ) : cart.lines.length === 0 ? (
@@ -940,7 +974,7 @@ function CheckoutSheet({
                   ></path>
                 </svg>
               </div>
-              <p className="text-lg font-medium text-zinc-600">Nothing to order</p>
+              <p className="text-lg font-medium text-zinc-600">{t("nothingToOrder")}</p>
             </div>
           ) : (
             <>
@@ -949,9 +983,9 @@ function CheckoutSheet({
                   a divider between the tabs and the basket below it. */}
               <div className="flex">
                 {[
-                  { value: "DINE_IN", label: "DINE IN" },
-                  { value: "TAKEAWAY", label: "TAKEAWAY" },
-                  { value: "DELIVERY", label: "DELIVERY" },
+                  { value: "DINE_IN", label: t("dineIn") },
+                  { value: "TAKEAWAY", label: t("takeaway") },
+                  { value: "DELIVERY", label: t("delivery") },
                 ].map((tab) => (
                   <button
                     key={tab.value}
@@ -1014,14 +1048,14 @@ function CheckoutSheet({
                   will actually be charged. */}
               <div className="mt-8 border-t border-dashed border-zinc-300 pt-6">
                 <div className="flex justify-between text-xl font-bold text-zinc-900">
-                  <span>Total:</span>
+                  <span>{t("total")}</span>
                   <span>{money(cart.subtotalCents + deliveryFeeCents)}</span>
                 </div>
               </div>
               <div className="border-b border-dashed border-zinc-300 pb-2">
                 {deliveryFeeCents > 0 && (
                   <p className="mt-1 text-right text-[13px] text-zinc-500">
-                    + Delivery fee {money(deliveryFeeCents)}
+                    {t("deliveryFee", { amount: money(deliveryFeeCents) })}
                   </p>
                 )}
               </div>
@@ -1030,7 +1064,7 @@ function CheckoutSheet({
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
-                  placeholder="Add note 🙏🏻"
+                  placeholder={t("addNote")}
                   rows={2}
                   className="w-full rounded-xl border border-zinc-100 bg-zinc-50 p-4 text-[15px] text-zinc-900 placeholder:text-zinc-500 focus:ring-1 focus:ring-zinc-300 focus:outline-none"
                 />
@@ -1058,7 +1092,7 @@ function CheckoutSheet({
                   onChange={(event) => setScheduledAt(event.target.value)}
                   className="h-12 flex-1 rounded-lg bg-zinc-100 px-4 text-[15px] font-medium text-zinc-900 focus:ring-1 focus:ring-zinc-300 focus:outline-none"
                 >
-                  <option value="">When ready</option>
+                  <option value="">{t("whenReady")}</option>
                   {timeSlots.map((slot) => (
                     <option key={slot} value={slot}>
                       {slot}
@@ -1084,7 +1118,7 @@ function CheckoutSheet({
                         : "border-transparent bg-zinc-100 text-zinc-900"
                     }`}
                   >
-                    <option value="">Table…</option>
+                    <option value="">{t("table")}</option>
                     {tables.map((candidate) => (
                       <option key={candidate.id} value={candidate.id}>
                         {candidate.label}
@@ -1122,17 +1156,17 @@ function CheckoutSheet({
                   blank, so the greyed-out ORDER button is never a
                   mystery. A real failure (offline, item sold out)
                   replaces it — that message is the more urgent one. */}
-              {(error ?? (missing.length > 0 ? "Fill all required fields" : null)) && (
+              {(error ?? (missing.length > 0 ? t("fillAllFields") : null)) && (
                 <p
                   role="alert"
                   className="mt-4 text-center text-sm font-medium text-red-600"
                 >
-                  {error ?? "Fill all required fields"}
+                  {error ?? t("fillAllFields")}
                 </p>
               )}
 
               <p className="mt-6 text-xs text-zinc-500">
-                By clicking Order, you confirm your age is 18+ and you agree to the{" "}
+                {t("termsNotice")}{" "}
                 <a href="#" className="underline">
                   terms
                 </a>
@@ -1151,7 +1185,7 @@ function CheckoutSheet({
                   : "bg-green-500 hover:bg-green-600 disabled:opacity-50"
               }`}
             >
-              {isSubmitting ? "Placing…" : "ORDER"}
+              {isSubmitting ? t("placing") : t("placeOrder")}
             </button>
           </div>
         </div>
@@ -1312,6 +1346,9 @@ function OrderPlaced({
       // the bKash PIN step.
       window.location.assign(payload.redirectUrl);
     } catch {
+      // Not translated yet: the payment screen is a separate surface
+      // with its own strings, and half-translating it would be worse
+      // than leaving it consistent.
       setError("You appear to be offline. Check your connection and try again.");
       setBusy(null);
     }

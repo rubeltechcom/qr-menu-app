@@ -71,6 +71,13 @@ model Tenant {
   paymentMode        String       @default("COUNTER") // COUNTER | OPTIONAL | REQUIRED
   payments           Payment[]
   webhookEvents      WebhookEvent[]
+  /// The restaurant's own logo, shown in its storefront header in place
+  /// of the generic mark. Null means "use the name alone".
+  logoUrl            String?
+  /// Locales this restaurant offers its guests, the first being the
+  /// default. `defaultLocale` remains the fallback for a guest whose
+  /// choice is not on this list.
+  locales            String[]     @default(["en"])
   defaultLocale      String       @default("en")
   currency           String       @default("USD")
   featureFlags       Json         @default("{}")

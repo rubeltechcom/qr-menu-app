@@ -28,7 +28,9 @@ export default async function PrintTablesPage({
       id: table.id,
       label: table.label,
       publicCode: table.publicCode,
-      svg: await tableQrSvg(table.publicCode, 280),
+      // The restaurant's own subdomain, so the printed sticker carries
+      // their address rather than the platform's.
+      svg: await tableQrSvg(table.publicCode, 280, { tenantSlug: tenant.slug }),
     })),
   );
 
