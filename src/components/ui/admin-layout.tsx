@@ -56,8 +56,11 @@ export function AdminLayout({
         <nav className="min-h-0 flex-1 overflow-y-auto p-4">
           <div className="flex flex-col gap-1">
             {navItems.map((item) => {
-              const isRootHref = item.href === "/admin" || /^\/dashboard\/[^/]+$/.test(item.href);
-              const isActive = item.active ?? (isRootHref ? pathname === item.href : pathname.startsWith(item.href));
+              const isRootHref =
+                item.href === "/admin" || /^\/dashboard\/[^/]+$/.test(item.href);
+              const isActive =
+                item.active ??
+                (isRootHref ? pathname === item.href : pathname.startsWith(item.href));
 
               return (
                 <Link
@@ -129,8 +132,11 @@ export function AdminLayout({
           previously left no way to move between sections at all. */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-zinc-200 bg-white md:hidden">
         {navItems.map((item) => {
-          const isRootHref = item.href === "/admin" || /^\/dashboard\/[^/]+$/.test(item.href);
-          const isActive = item.active ?? (isRootHref ? pathname === item.href : pathname.startsWith(item.href));
+          const isRootHref =
+            item.href === "/admin" || /^\/dashboard\/[^/]+$/.test(item.href);
+          const isActive =
+            item.active ??
+            (isRootHref ? pathname === item.href : pathname.startsWith(item.href));
 
           return (
             <Link
