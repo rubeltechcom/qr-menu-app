@@ -5,6 +5,7 @@ import {
   loadSettings,
   settingsLoaded,
 } from "@/modules/platform/settings.service";
+import { BRAND_NAME } from "@/lib/brand";
 
 /**
  * Terms of service.
@@ -23,7 +24,7 @@ export const dynamic = "force-dynamic";
 export default async function TermsPage() {
   if (!settingsLoaded()) await loadSettings();
 
-  const platform = getSetting("platform.name")?.trim() || "QR Menu";
+  const platform = getSetting("platform.name")?.trim() || BRAND_NAME;
   const support = getSetting("platform.supportEmail")?.trim();
 
   return (

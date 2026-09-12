@@ -128,7 +128,7 @@ describe("platform settings", () => {
     });
     expect(row).toBeNull();
     // Falls back to the built-in default rather than an empty string.
-    expect(getSetting("platform.name")).toBe("QR Menu");
+    expect(getSetting("platform.name")).toBe("Scanly");
   });
 
   it("ignores a key that is not in the settings schema", async () => {

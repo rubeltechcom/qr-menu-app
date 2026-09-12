@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Store, LogOut, ChevronLeft, Menu, X, ExternalLink } from "lucide-react";
+import { BRAND_NAME } from "@/lib/brand";
 
 /**
  * Chrome shared by the platform admin and a restaurant's dashboard.
@@ -186,7 +187,7 @@ export function AdminLayout({
             className="flex items-center gap-2 font-semibold tracking-tight text-zinc-900"
           >
             <Store className="h-5 w-5" />
-            <span>QR Menu App</span>
+            <span>{BRAND_NAME}</span>
           </Link>
         </div>
         {navBody}
@@ -207,7 +208,7 @@ export function AdminLayout({
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 px-5">
               <span className="flex items-center gap-2 font-semibold text-zinc-900">
                 <Store className="h-5 w-5" />
-                QR Menu App
+                {BRAND_NAME}
               </span>
               <button
                 type="button"

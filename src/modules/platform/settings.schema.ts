@@ -41,7 +41,7 @@ export const SETTING_GROUPS: SettingGroup[] = [
         label: "Platform name",
         hint: "Shown in the header, page titles and emails.",
         kind: "text",
-        placeholder: "QR Menu",
+        placeholder: "Scanly",
       },
       {
         key: "platform.supportEmail",
@@ -445,7 +445,7 @@ export const SETTING_GROUPS: SettingGroup[] = [
         hint: "The address recipients see. Must be a domain you have verified.",
         kind: "text",
         envVar: "EMAIL_FROM",
-        placeholder: "QR Menu <hello@example.com>",
+        placeholder: "Scanly <hello@example.com>",
       },
       {
         key: "email.replyTo",
@@ -509,7 +509,7 @@ export const SETTING_BY_KEY = new Map<string, SettingDefinition>(
 
 /** Defaults applied when neither the database nor the environment has a value. */
 export const SETTING_DEFAULTS: Record<string, string> = {
-  "platform.name": "QR Menu",
+  "platform.name": "Scanly",
   // No demo code by default. The seeded DEMO2345 exists only on a
   // developer's machine, so shipping it as a default sent every live
   // install's "See a live demo" button to a 404.

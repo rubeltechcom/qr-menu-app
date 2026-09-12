@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { env } from "@/lib/env";
+import { BRAND_NAME } from "@/lib/brand";
 
 /**
  * Chrome for the public-facing pages.
@@ -13,16 +14,16 @@ import { env } from "@/lib/env";
 export const metadata: Metadata = {
   metadataBase: new URL(env.APP_URL),
   title: {
-    default: "QR menu & ordering for restaurants",
-    template: "%s · QR Menu",
+    default: `${BRAND_NAME} — QR ordering for restaurants, shops & more`,
+    template: `%s · ${BRAND_NAME}`,
   },
   description:
-    "Give every table a QR code. Guests browse your menu and order from their own phone — dine-in, takeaway or delivery. Free to start.",
+    "Give every table or shelf a QR code. Customers browse and order from their own phone — dine-in, takeaway, delivery or collection. Free to start.",
   openGraph: {
     type: "website",
-    title: "QR menu & ordering for restaurants",
+    title: `${BRAND_NAME} — QR ordering for restaurants, shops & more`,
     description:
-      "Give every table a QR code. Guests browse your menu and order from their own phone. Free to start.",
+      "Give every table or shelf a QR code. Customers browse and order from their own phone. Free to start.",
     url: env.APP_URL,
   },
 };
@@ -42,10 +43,22 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             href="/"
             className="flex items-center gap-2 font-bold tracking-tight text-zinc-900"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 text-sm text-white">
-              QR
-            </span>
-            <span className="text-lg">Menu</span>
+            {/* The real mark rather than a grey "QR" tile, so the
+                header matches the favicon and the installed app.
+
+                A plain <img>, not next/image: the source is an SVG,
+                which the optimizer passes through unchanged, so the
+                only thing next/image would add here is a request
+                through the optimizer route. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/icon.svg"
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8"
+            />
+            <span className="text-lg">{BRAND_NAME}</span>
           </Link>
 
           <nav className="hidden items-center gap-8 md:flex">
@@ -82,11 +95,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <footer className="border-t border-zinc-200 bg-zinc-50">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-bold tracking-tight text-zinc-900">
-              QR Menu &amp; Ordering
-            </p>
+            <p className="font-bold tracking-tight text-zinc-900">{BRAND_NAME}</p>
             <p className="mt-1 text-sm text-zinc-600">
-              Digital menus and contactless ordering for restaurants.
+              QR menus and contactless ordering for restaurants, grocers and shops.
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-600">

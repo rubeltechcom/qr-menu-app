@@ -4,6 +4,7 @@ import {
   loadSettings,
   settingsLoaded,
 } from "@/modules/platform/settings.service";
+import { BRAND_NAME } from "@/lib/brand";
 
 /**
  * The privacy policy.
@@ -27,7 +28,7 @@ export const dynamic = "force-dynamic";
 export default async function PrivacyPolicyPage() {
   if (!settingsLoaded()) await loadSettings();
 
-  const platform = getSetting("platform.name")?.trim() || "QR Menu";
+  const platform = getSetting("platform.name")?.trim() || BRAND_NAME;
   const support = getSetting("platform.supportEmail")?.trim();
 
   return (

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { BRAND_FULL_NAME, BRAND_NAME } from "@/lib/brand";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker";
@@ -14,13 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "QR Menu & Ordering",
+  title: BRAND_FULL_NAME,
   description: "Digital QR-code menus and contactless ordering for restaurants.",
   // iOS ignores the web manifest, so the installed-app behaviour and
   // the home-screen icon have to be declared separately.
   appleWebApp: {
     capable: true,
-    title: "QR Menu",
+    title: BRAND_NAME,
     statusBarStyle: "default",
   },
   icons: {

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { BRAND_FULL_NAME, BRAND_NAME } from "@/lib/brand";
 
 /**
  * Web app manifest — what makes this installable to a home screen.
@@ -13,8 +14,8 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "QR Menu & Ordering",
-    short_name: "QR Menu",
+    name: BRAND_FULL_NAME,
+    short_name: BRAND_NAME,
     description: "Take QR menu orders, run the kitchen display and work the floor.",
     start_url: "/staff",
     // Standalone hides the address bar, so a propped-up tablet gains

@@ -1,4 +1,4 @@
-# QR Menu & Ordering — Multi-Tenant SaaS
+# Scanly — Multi-Tenant QR Ordering SaaS
 
 A multi-tenant platform for digital QR-code menus and contactless restaurant
 ordering. See [PROMPT.md](./PROMPT.md) for the full product/architecture
