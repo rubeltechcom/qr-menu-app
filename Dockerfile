@@ -76,13 +76,32 @@ COPY --from=builder --chown=node:node /app/prisma ./prisma
 # the server itself depends on.
 COPY --from=builder --chown=node:node /app/scripts ./scripts
 
-# The Prisma CLI and its engines, which the standalone output prunes —
-# it ships the client, not the tooling. Needed because migrations are
-# applied by the entrypoint on every start, so a deploy is one action
-# rather than a deploy plus a remembered terminal command.
-COPY --from=builder --chown=node:node /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=node:node /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=node:node /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+# The Prisma CLI, which the standalone output prunes — it ships the
+# client, not the tooling. Needed because migrations are applied by the
+# entrypoint on every start, so a deploy is one action rather than a
+# deploy plus a remembered terminal command.
+#
+# The whole dependency tree, not a hand-picked subset. Copying just
+# `prisma`, `@prisma` and the `.bin` shim looks tidier and does not
+# work: the CLI reaches outside those three paths at runtime, and the
+# failure is a crash loop on boot rather than anything a build catches.
+#
+#   * node_modules/.bin/prisma is a symlink to ../prisma/build/index.js.
+#     COPY follows symlinks, so naming it directly wrote a 2.8 MB *copy*
+#     into .bin/ — severed from the package directory it resolves
+#     against. It reads prisma_schema_build_bg.wasm relative to itself,
+#     so every `migrate deploy` died with ENOENT on that wasm.
+#
+#   * Deleting that file and calling prisma/build/index.js directly
+#     only moves the failure: the CLI requires `effect` by way of
+#     @prisma/config, and further transitive packages behind it, none
+#     of which live under prisma/ or @prisma/.
+#
+# This is the full `npm ci` tree, devDependencies included, so it costs
+# image size — the trade is migrations that actually run. The standalone
+# output keeps its own traced copy of what the *server* needs; this
+# layer lands on top of it and is a superset, so the server is unharmed.
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 
 # The version this image was built from, so a running container can say
 # which deploy it is. Written AFTER the standalone output is copied,
