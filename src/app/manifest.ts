@@ -22,9 +22,22 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     orientation: "any",
     background_color: "#fafafa",
-    theme_color: "#18181b",
-    categories: ["food", "business", "productivity"],
+    // Matches the icon, so the splash screen and Android's task
+    // switcher agree with the mark rather than framing it in near-black.
+    theme_color: "#4f46e5",
+    // Not food-only: the same QR ordering works for a grocer or a
+    // clothes shop, and an app-store listing filed under "food" would
+    // be wrong for them.
+    categories: ["business", "shopping", "food", "productivity"],
     icons: [
+      // Small sizes first, so a browser picking for a tab does not have
+      // to downscale a 512px PNG.
+      {
+        src: "/icons/icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
       {
         src: "/icons/icon-192.png",
         sizes: "192x192",

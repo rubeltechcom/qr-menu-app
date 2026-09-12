@@ -1,54 +1,57 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="102.4" fill="#18181b"/>
-  
-    <rect x="80.896" y="80.896" width="103.76533333333334" height="103.76533333333334"
-      rx="22.698666666666668" fill="none" stroke="#ffffff" stroke-width="27.56266666666667"/>
-  
-    <rect x="327.33866666666665" y="80.896" width="103.76533333333334" height="103.76533333333334"
-      rx="22.698666666666668" fill="none" stroke="#ffffff" stroke-width="27.56266666666667"/>
-  
-    <rect x="80.896" y="327.33866666666665" width="103.76533333333334" height="103.76533333333334"
-      rx="22.698666666666668" fill="none" stroke="#ffffff" stroke-width="27.56266666666667"/>
-  
-    <rect x="123.05066666666667" y="123.05066666666667" width="29.184000000000005" height="29.184000000000005"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="369.49333333333334" y="123.05066666666667" width="29.184000000000005" height="29.184000000000005"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="123.05066666666667" y="369.49333333333334" width="29.184000000000005" height="29.184000000000005"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="243.02933333333334" y="90.624" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="243.02933333333334" y="145.74933333333334" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="298.1546666666667" y="200.87466666666668" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="243.02933333333334" y="252.75733333333335" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="353.28000000000003" y="262.48533333333336" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="275.456" y="320.85333333333335" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="333.824" y="353.28000000000003" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="385.7066666666667" y="320.85333333333335" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="210.60266666666666" y="385.7066666666667" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="275.456" y="398.67733333333337" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
-  
-    <rect x="372.736" y="398.67733333333337" width="32.42666666666667" height="32.42666666666667"
-      rx="8.106666666666667" fill="#ffffff"/>
+  <!--
+    The app mark: a QR code, because that is what a customer holds their
+    phone up to — whether the business is a restaurant, a grocer or a
+    clothes shop.
+
+    The palette is deliberately neutral. An earlier version used amber
+    and orange, which reads as food and would sit oddly on a hardware
+    shop's tablet; indigo-to-violet is the register software itself
+    lives in and carries no category with it. Colour rather than the
+    flat near-black it started as: on a phone home screen or in a
+    browser tab this sits beside dozens of other icons, and a dark
+    square is the easiest thing in the world to overlook.
+
+    The single cyan centre gives the eye one fixed point to land on and
+    stops the three corners reading as identical.
+
+    Drawn at 512 and scaled down, so every raster size comes from this
+    one file — see scripts/generate-icons.mjs.
+  -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="50%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="102.4" fill="url(#tile)"/>
+
+  <!--
+    Corner finders. Thick strokes and only seven data squares: the mark
+    is shown at 48px in a tab and smaller again in a permissions list,
+    where thin lines and fine dots merge into a smudge.
+  -->
+  <g fill="none" stroke="#ffffff" stroke-width="34">
+    <rect x="76" y="76" width="118" height="118" rx="26"/>
+    <rect x="318" y="76" width="118" height="118" rx="26"/>
+    <rect x="76" y="318" width="118" height="118" rx="26"/>
+  </g>
+
+  <!-- Finder centres, one accented. -->
+  <rect x="118" y="118" width="34" height="34" rx="9" fill="#22d3ee"/>
+  <rect x="360" y="118" width="34" height="34" rx="9" fill="#ffffff"/>
+  <rect x="118" y="360" width="34" height="34" rx="9" fill="#ffffff"/>
+
+  <!-- Data squares. -->
+  <g fill="#ffffff">
+    <rect x="240" y="86" width="44" height="44" rx="11"/>
+    <rect x="240" y="170" width="44" height="44" rx="11"/>
+    <rect x="240" y="254" width="44" height="44" rx="11"/>
+    <rect x="324" y="254" width="44" height="44" rx="11"/>
+    <rect x="324" y="338" width="44" height="44" rx="11"/>
+    <rect x="240" y="380" width="44" height="44" rx="11"/>
+    <rect x="380" y="380" width="44" height="44" rx="11"/>
+  </g>
 </svg>

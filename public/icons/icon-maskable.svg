@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!--
+    The maskable variant, for Android.
+
+    Android crops a maskable icon to whatever shape the launcher uses —
+    circle, squircle, teardrop — and only the middle 80% is guaranteed
+    to survive. So the background bleeds to the full square (a rounded
+    rect would show its own corners inside the crop) and the mark is
+    scaled to ~62% and centred, leaving room for the worst-case circle.
+
+    Same palette as icon.svg; see the note there.
+  -->
+  <defs>
+    <linearGradient id="tileMask" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="50%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Edge to edge: the launcher supplies the shape. -->
+  <rect width="512" height="512" fill="url(#tileMask)"/>
+
+  <!-- 0.62 scale, centred: 512 * 0.62 = 317.44, so offset by 97.28. -->
+  <g transform="translate(97.28 97.28) scale(0.62)">
+    <g fill="none" stroke="#ffffff" stroke-width="34">
+      <rect x="76" y="76" width="118" height="118" rx="26"/>
+      <rect x="318" y="76" width="118" height="118" rx="26"/>
+      <rect x="76" y="318" width="118" height="118" rx="26"/>
+    </g>
+
+    <rect x="118" y="118" width="34" height="34" rx="9" fill="#22d3ee"/>
+    <rect x="360" y="118" width="34" height="34" rx="9" fill="#ffffff"/>
+    <rect x="118" y="360" width="34" height="34" rx="9" fill="#ffffff"/>
+
+    <g fill="#ffffff">
+      <rect x="240" y="86" width="44" height="44" rx="11"/>
+      <rect x="240" y="170" width="44" height="44" rx="11"/>
+      <rect x="240" y="254" width="44" height="44" rx="11"/>
+      <rect x="324" y="254" width="44" height="44" rx="11"/>
+      <rect x="324" y="338" width="44" height="44" rx="11"/>
+      <rect x="240" y="380" width="44" height="44" rx="11"/>
+      <rect x="380" y="380" width="44" height="44" rx="11"/>
+    </g>
+  </g>
+</svg>

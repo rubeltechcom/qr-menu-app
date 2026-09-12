@@ -24,7 +24,12 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   icons: {
+    // Smallest first: a browser choosing a tab icon should not have to
+    // downscale a 192px PNG. The SVG is listed for anything that
+    // prefers a vector and renders crisply at any size.
     icon: [
+      { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-48.png", sizes: "48x48", type: "image/png" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon.svg", type: "image/svg+xml" },
     ],
@@ -33,7 +38,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#18181b",
+  // The icon's own indigo, so the browser chrome and the installed
+  // app's status bar match the mark rather than framing it in black.
+  themeColor: "#4f46e5",
   // Fills the notch area on an installed iOS app rather than leaving a
   // white band above the header.
   viewportFit: "cover",
