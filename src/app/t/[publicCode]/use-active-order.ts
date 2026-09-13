@@ -52,9 +52,9 @@ function parseActiveOrder(raw: string): ActiveOrder | null {
   }
 }
 
-export function useActiveOrder(publicCode: string) {
+export function useActiveOrder(storageKey: string) {
   const [order, setOrder] = useLocalStorageState<ActiveOrder | null>(
-    `qrmenu.active-order.${publicCode}`,
+    `qrmenu.active-order.${storageKey}`,
     null,
     parseActiveOrder,
   );

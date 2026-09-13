@@ -156,7 +156,7 @@ export async function StorefrontForTable({
 
   return (
     <Storefront
-      publicCode={publicCode}
+      scope={{ kind: "table", publicCode }}
       tableId={table.id}
       tables={tables}
       restaurantName={tenant?.name ?? location?.name ?? ""}

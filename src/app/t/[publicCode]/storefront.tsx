@@ -8,6 +8,7 @@ import { useLocale } from "./use-locale";
 import { buildTranslationMap } from "@/modules/i18n/translation-map";
 import type { TranslationRow } from "@/modules/i18n/translation.repository";
 import { LanguagePicker } from "./language-picker";
+import { scopeKey, type StorefrontScope } from "./scope";
 
 interface MenuItemView {
   id: string;
@@ -124,7 +125,7 @@ function isoForSlot(slot: string) {
 }
 
 export function Storefront({
-  publicCode,
+  scope,
   tableId,
   tables,
   restaurantName,
@@ -137,8 +138,22 @@ export function Storefront({
   paymentMode,
   providers,
 }: {
-  publicCode: string;
-  tableId: string;
+  /** Which storefront this is — a scanned table, or a shop's own link. */
+  scope: StorefrontScope;
+  /**
+   * The table an order defaults to, when one was scanned.
+   *
+   * Null on a shop link: a grocer has no tables, and a restaurant
+   * reached through its master QR has not been told which one the guest
+   * is sitting at yet.
+   */
+  tableId: string | null;
+  /**
+   * Tables the guest may file the order against. Empty for a shop.
+   *
+   * On a scanned code this is the list they can correct to after moving
+   * seats; on a master QR it is the list they must choose from.
+   */
   tables: Array<{ id: string; label: string }>;
   /** The restaurant's own name, shown in the header beside its logo. */
   restaurantName: string;
@@ -153,9 +168,14 @@ export function Storefront({
   paymentMode: PaymentMode;
   providers: Array<{ id: string; displayName: string }>;
 }) {
-  const cart = useCart(publicCode);
+  // One namespace for everything this guest accumulates here. Derived
+  // once: two shops on the same phone must not share a cart, and neither
+  // a shop and a table whose identifiers happen to match (see scope.ts).
+  const storageKey = scopeKey(scope);
+
+  const cart = useCart(storageKey);
   const { locale, setLocale, t } = useLocale({
-    publicCode,
+    storageKey,
     offered: locales,
     fallback: defaultLocale,
   });
@@ -185,7 +205,7 @@ export function Storefront({
     isFavourite,
     toggle: toggleFavourite,
     count: favouriteCount,
-  } = useFavourites(publicCode);
+  } = useFavourites(storageKey);
   const { clear: clearCart } = cart;
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [placed, setPlaced] = useState<{
@@ -196,7 +216,7 @@ export function Storefront({
   // way back to its tracking page after the sheet closes. Stored rather
   // than held in state: a diner who refreshes or locks their phone while
   // waiting must not lose the only link to their own order.
-  const { activeOrder, remember: rememberOrder } = useActiveOrder(publicCode);
+  const { activeOrder, remember: rememberOrder } = useActiveOrder(storageKey);
   const [selectedItem, setSelectedItem] = useState<MenuItemView | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>(POPULAR_ID);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -731,7 +751,7 @@ export function Storefront({
       {/* Checkout Sheet */}
       {isSheetOpen && (
         <CheckoutSheet
-          publicCode={publicCode}
+          scope={scope}
           tableId={tableId}
           tables={tables}
           cart={cart}
@@ -747,7 +767,7 @@ export function Storefront({
 }
 
 function CheckoutSheet({
-  publicCode,
+  scope,
   tableId,
   tables,
   cart,
@@ -757,8 +777,8 @@ function CheckoutSheet({
   onClose,
   onPlaced,
 }: {
-  publicCode: string;
-  tableId: string;
+  scope: StorefrontScope;
+  tableId: string | null;
   tables: Array<{ id: string; label: string }>;
   cart: ReturnType<typeof useCart>;
   currency: string;
@@ -767,7 +787,10 @@ function CheckoutSheet({
   onClose: () => void;
   onPlaced: (result: { orderNumber: number; trackToken: string }) => void;
 }) {
-  const [type, setType] = useState<OrderType>("DINE_IN");
+  // A shop has no tables to sit at, so eating in is not on offer there —
+  // start on collection instead, which is what a counter sale is.
+  const canDineIn = tables.length > 0;
+  const [type, setType] = useState<OrderType>(canDineIn ? "DINE_IN" : "TAKEAWAY");
   const [note, setNote] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -777,7 +800,9 @@ function CheckoutSheet({
   const [isSubmitting, setSubmitting] = useState(false);
   // The scanned table is pre-selected — it is nearly always the right
   // answer — but the diner must be able to correct it if they moved.
-  const [seatedTableId, setSeatedTableId] = useState(tableId);
+  // Empty when no code was scanned: on a master QR the guest picks the
+  // table themselves, and on a shop link there is nothing to pick.
+  const [seatedTableId, setSeatedTableId] = useState(tableId ?? "");
   // "" means as soon as it is ready; anything else is an "HH:mm" slot.
   const [scheduledAt, setScheduledAt] = useState("");
   // Set once the order lands, so the success state can play inside this
@@ -836,7 +861,12 @@ function CheckoutSheet({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          publicCode,
+          // Whichever identifier this storefront was reached by. The
+          // server resolves the tenant from it either way, and re-reads
+          // every price regardless (see order.service.ts).
+          ...(scope.kind === "table"
+            ? { publicCode: scope.publicCode }
+            : { shopSlug: scope.slug }),
           type,
           tableId: type === "DINE_IN" ? seatedTableId : undefined,
           ...(scheduledAt ? { scheduledFor: isoForSlot(scheduledAt) } : {}),
@@ -1010,7 +1040,10 @@ function CheckoutSheet({
                   a divider between the tabs and the basket below it. */}
               <div className="flex">
                 {[
-                  { value: "DINE_IN", label: t("dineIn") },
+                  // Eating in needs somewhere to sit. A shop has no
+                  // tables, so the tab is absent rather than present and
+                  // leading to an empty picker.
+                  ...(canDineIn ? [{ value: "DINE_IN", label: t("dineIn") }] : []),
                   { value: "TAKEAWAY", label: t("takeaway") },
                   { value: "DELIVERY", label: t("delivery") },
                 ].map((tab) => (
@@ -1129,8 +1162,11 @@ function CheckoutSheet({
               </div>
 
               {type === "DINE_IN" ? (
-                /* Table — required. Pre-set to the scanned table, but a
-                   diner who has moved seats can correct it. */
+                /* Table — required. Pre-set to the scanned table when a
+                   code was scanned, so a diner who has moved seats can
+                   correct it; empty on a master QR, where choosing is the
+                   whole point. Staff still accept the order before the
+                   kitchen starts it, which is what catches a wrong pick. */
                 <div className="mt-3">
                   <select
                     aria-label="Table"

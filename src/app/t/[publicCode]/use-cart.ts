@@ -36,11 +36,13 @@ function parseCart(raw: string): CartLine[] | null {
  * order entirely (PROMPT.md §6.1: "Cart persists across refresh and
  * accidental tab closure").
  *
- * Keyed by publicCode so two tables open in two tabs don't share a cart.
+ * Keyed by storefront scope (see scope.ts) so two tables open in two
+ * tabs don't share a cart — and neither do two shops, which have no
+ * table code to tell them apart.
  */
-export function useCart(publicCode: string) {
+export function useCart(storageKey: string) {
   const [lines, setLines] = useLocalStorageState<CartLine[]>(
-    `qrmenu.cart.${publicCode}`,
+    `qrmenu.cart.${storageKey}`,
     EMPTY,
     parseCart,
   );

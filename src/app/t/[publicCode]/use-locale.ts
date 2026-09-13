@@ -23,16 +23,17 @@ function parseLocale(raw: string): string | null {
 }
 
 export function useLocale(params: {
-  publicCode: string;
+  /** The storefront's storage namespace — see scope.ts. */
+  storageKey: string;
   /** What this restaurant offers, first being its default. */
   offered: string[];
   /** Its configured fallback. */
   fallback: string;
 }) {
-  const { publicCode, offered, fallback } = params;
+  const { storageKey, offered, fallback } = params;
 
   const [chosen, setChosen] = useLocalStorageState<string | null>(
-    `qrmenu.locale.${publicCode}`,
+    `qrmenu.locale.${storageKey}`,
     null,
     parseLocale,
   );

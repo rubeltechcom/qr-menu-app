@@ -31,9 +31,9 @@ function parseFavourites(raw: string): string[] | null {
   }
 }
 
-export function useFavourites(publicCode: string) {
+export function useFavourites(storageKey: string) {
   const [ids, setIds] = useLocalStorageState<string[]>(
-    `qrmenu.favourites.${publicCode}`,
+    `qrmenu.favourites.${storageKey}`,
     EMPTY,
     parseFavourites,
   );
