@@ -56,6 +56,12 @@ const eslintConfig = defineConfig([
       // resolveTableByPublicCode(); the `public_code_lookup` RLS policy
       // is what keeps that read narrow.
       "src/modules/tables/table.repository.ts",
+      // The same shape for a shop's own link: /<slug> carries no tenant,
+      // and resolving the slug is what establishes one. A shop with no
+      // tables has no publicCode to resolve, so this is its only entry
+      // point. The `storefront_slug_lookup` policy pins the read to the
+      // single shop the URL names — see storefront.repository.ts.
+      "src/modules/tenants/storefront.repository.ts",
       // Same shape for a diner's order-tracking token — see
       // resolveTenantByTrackToken() and the track_token_lookup policy.
       "src/modules/orders/order.repository.ts",
