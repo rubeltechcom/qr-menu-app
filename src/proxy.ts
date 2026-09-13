@@ -18,19 +18,57 @@ import { NextResponse, type NextRequest } from "next/server";
  * Named proxy.ts per the Next.js 16 convention (formerly middleware.ts).
  */
 
-// Keep this list in one place and validate signups against it too, so a
-// restaurant can never claim a slug that would shadow a platform surface.
-export const RESERVED_SUBDOMAINS = new Set([
+/**
+ * Slugs a tenant may never claim.
+ *
+ * Two separate hazards, one list, because a slug has to survive both
+ * shapes a storefront link can take:
+ *
+ *   * As a subdomain (<slug>.<APP_DOMAIN>), `www` or `mail` would
+ *     shadow infrastructure that has nothing to do with this app.
+ *
+ *   * As a path segment — the shape every install uses when APP_DOMAIN
+ *     is unset, and the one a shop link is built from — a slug that
+ *     matches a top-level route would shadow the route itself. A tenant
+ *     called `dashboard` is not a cosmetic clash: it is someone else's
+ *     slug sitting where the operator's own console is served from.
+ *
+ * So every segment under src/app/ belongs here, not just DNS names.
+ * reserved-slugs.test.ts reads that directory and fails if a route is
+ * added without a matching entry, because the failure mode otherwise is
+ * silent and only appears once a tenant happens to pick the name.
+ */
+export const RESERVED_SLUGS = new Set([
+  // Infrastructure hostnames, meaningful only as subdomains.
   "www",
   "app",
-  "api",
-  "admin",
   "cdn",
   "static",
   "mail",
   "blog",
   "help",
   "status",
+
+  // Top-level routes — see src/app/. Keep in sync; the test enforces it.
+  "admin",
+  "api",
+  "dashboard",
+  "login",
+  "logout",
+  "m",
+  "offline",
+  "order",
+  "signup",
+  "staff",
+  "t",
+
+  // Well-known files Next.js serves from the root. These are not
+  // directories under src/app/, so the test cannot derive them.
+  "_next",
+  "favicon.ico",
+  "manifest.webmanifest",
+  "robots.txt",
+  "sitemap.xml",
 ]);
 
 export function proxy(request: NextRequest) {

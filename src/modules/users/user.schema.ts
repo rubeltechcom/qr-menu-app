@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { tenantSlugSchema } from "@/modules/tenants/tenant.schema";
 
 export const signUpSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
@@ -11,16 +12,11 @@ export const signUpSchema = z.object({
     .regex(/[A-Z]/, "Include an uppercase letter")
     .regex(/[0-9]/, "Include a number"),
   restaurantName: z.string().trim().min(1, "Restaurant name is required").max(120),
-  slug: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(2)
-    .max(63)
-    .regex(
-      /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/,
-      "Use lowercase letters, numbers, and hyphens only",
-    ),
+  // The shared rule, not a copy of it. This schema previously carried
+  // its own pattern without the reserved-name check, which made signup —
+  // the path almost every tenant arrives through — the one route where
+  // a slug like `admin` was accepted.
+  slug: tenantSlugSchema,
 });
 
 export type SignUpInput = z.infer<typeof signUpSchema>;

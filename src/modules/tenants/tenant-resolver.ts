@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { rawPrisma } from "@/server/db/client";
 import { env } from "@/lib/env";
-import { RESERVED_SUBDOMAINS } from "@/proxy";
+import { RESERVED_SLUGS } from "@/proxy";
 
 /**
  * Resolves the current request's tenant from the `x-tenant-hostname`
@@ -42,7 +42,7 @@ export async function resolveTenantFromRequest(): Promise<{
   if (
     !candidateSlug ||
     candidateSlug.includes(".") ||
-    RESERVED_SUBDOMAINS.has(candidateSlug)
+    RESERVED_SLUGS.has(candidateSlug)
   ) {
     return null;
   }
